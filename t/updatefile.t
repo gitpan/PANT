@@ -3,7 +3,7 @@
 
 #########################
 
-use Test::More tests => 6;
+use Test::More tests => 9;
 
 BEGIN { use_ok('PANT') };
 
@@ -31,6 +31,8 @@ ok(UpdateFileVersion($tmpfile,
    "File been updated");
 my $contents = FileLoad($tmpfile);
 like($contents, qr/VERSION\s*1\.2/, "Version number has been incremented");
+like(FindPatternInFile($tmpfile, qr/VERSION\s*(\d+.\d+)/), qr/^1\.2$/,
+	"Found version in file");
 my $date = localtime();
 ok(UpdateFileVersion($tmpfile,
 		     qr/(\#define\s*VERSION\s*\d+\.)(\d+)/=>q{"$1" . ($2+1)},
@@ -38,6 +40,10 @@ ok(UpdateFileVersion($tmpfile,
 		     ),
    "File has been updated"
    );
+like(FindPatternInFile($tmpfile, qr/VERSION\s*(\d+.\d+)/), qr/^1\.3$/,
+	"Found version in file");
+like(FindPatternInFile($tmpfile, qr/RELDATE\s*(.*)/), qr/$date/,
+	"Found date in file");
 
 $contents = FileLoad($tmpfile);
 like($contents, qr/VERSION\s*1\.3/, "Version number has been incremented");

@@ -30,7 +30,7 @@ our @ISA = qw(Exporter);
 # will save memory.
 our %EXPORT_TAGS = ( 'all' => [ qw(
 	Phase Task NewerThan Command CopyFile CopyFiles DateStamp FileCompare
-        MoveFile MoveFiles MakeTree RmTree Cvs
+        MoveFile MoveFiles MakeTree RmTree Cvs FindPatternInFile
 	UpdateFileVersion StartPant EndPant CallPant RunTests Zip) ] );
 
 our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
@@ -38,7 +38,7 @@ our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
 our @EXPORT =  ( @{ $EXPORT_TAGS{'all'} } );
 
 
-our $VERSION = '0.10';
+our $VERSION = '0.11';
 
 my $dryrun = 0;
 my ($logvolume, $logdirectory, $logfilename, $logstem, $logsuffix);
@@ -432,7 +432,7 @@ PANT - Perl extension for ANT/NANT like build environments
   Task(Command("cvs update"), "Fetch the latest code");
   Phase(2, "Build");
   Task(UpdateFileVersion("h/version.h",
-	 qr/(#define\s*VERSION\s+)(\d+)/=>q{"$1" . ($2+1)"},
+	 qr/(#define\s*VERSION\s+)(\d+)/=>q{"$1" . ($2+1)},
 	 "Version file updated");
   Task(Command("make all"), "Built distribution");
   Phase(3, "Deploy");

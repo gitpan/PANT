@@ -111,7 +111,7 @@ PANT::Test - PANT support for running tests
   use PANT::Test;
 
   $tester = new PANT::Test($xmlwriter);
-  $tester->runtests(@testlist);
+  $tester->runtests(tests=>[@testlist], directory=>"test");
 
 =head1 ABSTRACT
 
