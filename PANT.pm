@@ -41,7 +41,7 @@ our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
 our @EXPORT =  ( @{ $EXPORT_TAGS{'all'} } );
 
 
-our $VERSION = '0.12';
+our $VERSION = '0.13';
 
 my $dryrun = 0;
 my ($logvolume, $logdirectory, $logfilename, $logstem, $logsuffix);
@@ -63,7 +63,8 @@ sub StartPant {
     		dryrun=>\$dryrun);
     my $fh = *STDOUT;
     if ($logname) {
-	$fh = new IO::File "$logname", "w";
+	$fh = new IO::File "$logname", "w" or die "Can't open file $logname";
+
     }
     else {
 	$logname = "buildlog.html";
@@ -252,9 +253,13 @@ sub Command {
     }
     $writer->characters("$cmd failed: $!") if ($retval == 0);
     if ($args{log}) {
+	my($v,$d, $f) = splitpath($args{log});
+	my $fulllog = rel2abs($args{log});
+	my $destlog = catpath($logvolume, $logdirectory, $f);
+	CopyFile($args{log},   $destlog) if($fulllog ne $destlog);
 	my $reldir = abs2rel($args{log}, catpath($logvolume, $logdirectory, ''));
 
-	$writer->dataElement('a', "Log file", href=>$reldir);
+	$writer->dataElement('a', "Log file", href=>$f);
     }
     $writer->endTag('li');
     do { chdir($cdir) || Abort("Can't change back to $cdir: $!"); } if ($args{directory});
@@ -275,7 +280,8 @@ sub CopyFiles {
 # copy over several files into a new directory
 sub CopyTree {
     my ($src, $dest) = @_;
-    File::Copy::Recursive::rcopy($src, $dest);
+    $writer->dataElement('li', "Copy $src tree to $dest\n");
+    return File::Copy::Recursive::rcopy($src, $dest) if (!$dryrun);
     return 1;
 }
 
@@ -424,7 +430,8 @@ sub FindPatternInFile {
     open(FILE, $file) || return undef;
     while (my $line = <FILE>) {
         if ($line =~ $pat) {
-              return $1;
+	    close(FILE);
+	    return $1;
         }
     }
     close(FILE);

@@ -33,7 +33,7 @@ EOF
 
 my $cvs = Cvs();
 ok($cvs, "Cvs allocated");
-my $command = qq{$this_perl -ne '{ print; }' xxxtest.txt};
+my $command = qq{$this_perl -ne "{ print; }" xxxtest.txt};
 ok($cvs->Run($command), "Cvs Run $command ok");
 ok($cvs->HasUpdate(), "An updated file has been spotted");
 ok(!$cvs->HasLocalMod(), "A local file has not been modifed");
@@ -45,7 +45,7 @@ cvs update: Updating hlp
 cvs update: Updating html
 cvs update: Updating res
 EOF
-ok($cvs->Run("$this_perl -ne '{ print; }' xxxtest.txt"), "Cvs Run ok");
+ok($cvs->Run(qq{$this_perl -ne "{ print; }" xxxtest.txt}), "Cvs Run ok");
 ok(!$cvs->HasUpdate(), "An update has not occured");
 ok($cvs->HasLocalMod(), "A local file has  been modifed");
 ok(!$cvs->HasConflict(), "A file has not conflicted");
@@ -57,11 +57,11 @@ cvs update: Updating html
 cvs update: Updating res
 EOF
 
-ok($cvs->Run("$this_perl -ne '{ print; }' xxxtest.txt"), "Cvs Run ok");
+ok($cvs->Run(qq{$this_perl -ne "{ print; }" xxxtest.txt}), "Cvs Run ok");
 ok(!$cvs->HasUpdate(), "An update has not occured");
 ok(!$cvs->HasLocalMod(), "A local file has  been modifed");
 ok($cvs->HasConflict(), "A file has conflicted");
-
+undef $cvs; # remove file reference
 EndPant();
 
 unlink(@delfiles);

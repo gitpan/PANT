@@ -3,7 +3,7 @@
 
 #########################
 
-use Test::More tests => 33;
+use Test::More tests => 35;
 
 BEGIN { use_ok('PANT') };
 
@@ -75,6 +75,8 @@ ok(-d "newtestdir", "New directory exists");
 ok(-d "newtestdir/mytest", "New directory exists");
 ok(RmTree("testdir"), "Removed testdir");
 ok(! -d "testdir", "testdir has been removed");
+ok(RmTree("newtestdir"), "Removed testdir");
+ok(! -d "newtestdir", "newtestdir has been removed");
 
 
 

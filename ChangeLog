@@ -1,3 +1,10 @@
+2005-03-11  Julian Onions  
+
+	* PANT.pm: Added more commentary to tree copies
+	* t - improved some of the tests so they run on pure windows
+	* Several more tests added, and some internals adjusted.
+	* CopyTree dryrun flag, and return number of copied files
+	
 2005-03-04  Julian Onions
 
 	* PANT.pm: some tinkering with the CallPant routine
