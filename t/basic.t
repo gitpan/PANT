@@ -3,7 +3,7 @@
 
 #########################
 
-use Test::More tests => 22;
+use Test::More tests => 23;
 
 BEGIN { use_ok('PANT') };
 
@@ -47,6 +47,7 @@ push(@dellist, "test2.tmp");
 ok(!NewerThan(sources=>[qw(test.tmp)], targets=>[qw(test2.tmp)]), "Newer test");
 ok(NewerThan(sources=>[qw(test2.tmp)], targets=>[qw(test.tmp)]), "Older test");
 
+ok(CopyFile("test5.tmp", "test6.tmp") == 0, "Copied non existant file failed");
 ok(CopyFile("test2.tmp", "test3.tmp"), "Copied file");
 push(@dellist, "test3.tmp");
 ok(-f "test3.tmp", "test3.tmp exists");

@@ -1,3 +1,8 @@
+2005-02-03  Julian Onions  <jpo@corsair.nexor.co.uk>
+
+	* Version 0.06
+	* PANT.pm: Added better diagnostics to the Copy* commands.
+
 2005-02-02  Julian Onions 
 
 	* Version 0.05

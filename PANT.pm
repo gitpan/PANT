@@ -36,7 +36,7 @@ our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
 our @EXPORT =  ( @{ $EXPORT_TAGS{'all'} } );
 
 
-our $VERSION = '0.05';
+our $VERSION = '0.06';
 
 my $dryrun = 0;
 my ($logvolume, $logdirectory, $logfilename, $logstem, $logsuffix);
@@ -176,7 +176,7 @@ sub NewerThan {
 	foreach my $glob (@{ $args{treesources} }) {
 	    foreach my $sfile (glob $glob) {
 		find($wanted, $sfile);
-		print "Check tree $sfile\n";
+		#print "Check tree $sfile\n";
 	    }
 	}
     }
@@ -254,9 +254,7 @@ sub CopyFiles {
     Abort("$dest is not a directory") if (!$dryrun && ! -d $dest);
     foreach my $sfile (glob $src) {
 	my $bname = basename($sfile);
-	$writer->dataElement('li', "Copy $sfile to $dest/$bname\n");
-	next if ($dryrun);
-	return 0 if copy($sfile, "$dest/$bname") == 0;
+	return 0 if CopyFile($sfile, "$dest/$bname") == 0;
     }
     return 1;
     
@@ -267,7 +265,11 @@ sub CopyFile {
     my ($src, $dest) = @_;
     $writer->dataElement('li', "Copy $src to $dest\n");
     return 1 if ($dryrun);
-    return copy($src, $dest) ;
+    if( copy($src, $dest) == 0) {
+	$writer->dataElement('li', "Copy failed: $!\n");
+	return 0;
+    }
+    return 1;
 }
 
 sub UpdateFileVersion {
