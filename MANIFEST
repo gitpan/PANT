@@ -1,6 +1,12 @@
 Changes
-MANIFEST
 Makefile.PL
+MANIFEST
+META.yml			Module meta-data (added by MakeMaker)
 PANT.pm
+PANT/Test.pm
+PANT/Zip.pm
 README
 t/1.t
+t/fake.t
+t/ptest.t
+t/ztest.t

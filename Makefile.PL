@@ -5,7 +5,9 @@ use ExtUtils::MakeMaker;
 WriteMakefile(
     'NAME'		=> 'PANT',
     'VERSION_FROM'	=> 'PANT.pm', # finds $VERSION
-    'PREREQ_PM'		=> {XML::Writer=>0.52 }, # e.g., Module::Name => 1.1
+    'PREREQ_PM'		=> {XML::Writer=>0.52, Carp=>0, Cwd=>0, File::Copy=>0, 
+    	File::Basename=>0,File::Spec::Functions=>0, Getopt::Long=>0,
+    	IO::File=>0, Exporter=>0}, 
     ($] >= 5.005 ?    ## Add these new keywords supported since 5.005
       (ABSTRACT_FROM => 'PANT.pm', # retrieve abstract from module
        AUTHOR     => 'Julian Onions <julianonions@yahoo.co.uk>') : ()),

@@ -27,17 +27,14 @@ our @ISA = qw(Exporter);
 # will save memory.
 our %EXPORT_TAGS = ( 'all' => [ qw(
 	Phase Task NewerThan Command CopyFile CopyFiles DateStamp 
-	UpdateFileVersion StartPant EndPant CallPant			   
-) ] );
+	UpdateFileVersion StartPant EndPant CallPant RunTests Zip) ] );
 
 our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
 
-our @EXPORT = qw(
-	Phase Task NewerThan Command CopyFile CopyFiles DateStamp 
-	UpdateFileVersion StartPant EndPant CallPant
-);
+our @EXPORT =  ( @{ $EXPORT_TAGS{'all'} } );
 
-our $VERSION = '0.01';
+
+our $VERSION = '0.02';
 
 my $dryrun = 0;
 my $logname;
@@ -46,9 +43,11 @@ my $writer;
 
 sub StartPant {
     my $title = shift || "Build log";
+    $logname = "";
     GetOptions("output=s"=>\$logname,
     		n=>\$dryrun,
     		dryrun=>\$dryrun);
+    $writer = 0;
     my $fh = *STDOUT;
     if ($logname) {
 	$fh = new IO::File "$logname.html", "w";
@@ -71,16 +70,19 @@ sub EndPant {
     $writer->endTag('body');
     $writer->endTag('html');
     $writer->end();
+    undef $writer; # close files and flush
 }
 
 # call a subsidiary build
 sub CallPant {
     my $build = shift;
+    my (%args) = @_;
     $writer->startTag('li');
     
     $writer->characters("Calling subsidiary build $build.");
-    my $rv = Command("perl $build -output $logname-$logcount");
-    $writer->dataElement('a', "Log", href=>"$logname-$logcount.html");
+    my $dir = $args{directory} . "/" || "";
+    my $rv = Command("$^X $build -output $logname-$logcount", 
+		     log=>"$dir$logname-$logcount.html", @_);
     $logcount ++;
     $writer->endTag('li');   
     return $rv;
@@ -155,7 +157,7 @@ sub NewerThan {
 sub Task {
     my $test = shift;
     $writer->dataElement('li', "@_\n");
-    Abort(@_) if ! $test;
+    Abort("FAILED: ", @_) if ! $test;
     return 1;
 }
 
@@ -183,16 +185,26 @@ sub Command {
     my $output;
     my $retval;
     if ($dryrun) {
-	$output = "Output of the command $cmd";
+	$output = "Output of the command $cmd would be here";
 	$retval = 1;
     }
     else {
+        $writer->startTag('pre');
 	$cmd .= " 2>&1"; # collect stderr too
-	$output = qx($cmd) if (!$dryrun);
-	$retval = $? == 0;
+	if (open(PIPE, "$cmd |")) {
+	    while(my $line = <PIPE>) {
+		$writer->characters($line);
+	    }
+	    close(PIPE);
+	    $retval = $? == 0;
+	}
+	else {
+	    $retval = 0;
+	}
+        $writer->endTag('pre');
     }
-    $writer->dataElement('pre', $output);
     $writer->characters("$cmd failed: $!") if ($retval == 0);
+    $writer->dataElement('a', "Log file", href=>$args{log}) if $args{log};
     $writer->endTag('li');
     do { chdir($cdir) || Abort("Can't change back to $cdir: $!"); } if ($args{directory});
     return $retval;
@@ -252,6 +264,18 @@ sub AddElement {
     $writer->dataElement(@_);
 }
 
+
+sub RunTests {
+    require PANT::Test;
+    my $test = new PANT::Test($writer);
+    return $test->RunTests(@_);
+}
+
+sub Zip {
+    require PANT::Zip;
+    return new PANT::Zip($writer, @_);
+}
+
 1;
 __END__
 # Below is stub documentation for your module. You'd better edit it!
@@ -265,12 +289,12 @@ PANT - Perl extension for ANT/NANT like build environments
   perl buildall.pl -output buildlog
 
   use PANT;
-  BeginPant();
+  StartPant();
   Phase(1, "Update");
   Task(Command("cvs update"), "Fetch the latest code");
   Phase(2, "Build");
   Task(UpdateFileVersion("h/version.h",
-	 qr/(#define\s*VERSION\s+)(\d+)/=>"$1 . ($2+1)"),
+	 qr/(#define\s*VERSION\s+)(\d+)/=>"\$1 . (\$2+1)"),
 	 "Version file updated");
   Task(Command("make all"), "Built distribution");
   Phase(3, "Deploy");
@@ -311,18 +335,43 @@ intialisation, and parses command line arguments in @ARGV. It takes
 one optional argument which is a string used to title the HTML build
 log. If not present it will be called "Build Log".
 
+Supported command line options are 
+
+=over 4
+
+=item -output file
+
+Write the output to the given file, with .html appended.
+
+=item -dryrun
+
+Simulate a run without actually doing anything.
+
+=back
+
 =head2 EndPant()
 
 This function finishes up the run, and should be the last call into
 the module. It completes the build log in a tidy way.
 
-=head2 CallPant(name)
+=head2 CallPant(name, options)
 
 This function allows you to call a subsidiary pant build. The build
 will be run and waited for. A reference in the current log will be
 made to the new log. It is assumed that the subsidiary build is also
 using PANT as it passes some command line arguments to sort out the
 logging.
+
+Options include
+
+=over 4
+
+=item directory=>place
+
+Change to the given directory to run the subsidiary build. The log
+path should be modified so it fits.
+
+=back
 
 =head2 Phase([list])
 
@@ -397,6 +446,10 @@ This allows additional constructs to be added to the output, such a
 href references and so on. It is passed onto XML::Writer::dataElement
 directly and takes the same syntax.
 
+=head2 RunTests(list)
+
+Run the list of perl style test files, and capture the result in the output of the log.
+
 
 =head1 SEE ALSO
 
@@ -409,7 +462,7 @@ to be incorporated.
 
 =head1 AUTHOR
 
-Julian Onions, E<lt>julianonions@yahoo.co.uk<gt>
+Julian Onions, E<lt>julianonions@yahoo.nospam-co.uk<gt>
 
 =head1 COPYRIGHT AND LICENSE
 
@@ -417,5 +470,11 @@ Copyright 2005 by Julian Onions
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself. 
+
+=head1 RULES TO LIVE BY
+
+Don't get caught with your PANT's down.
+
+Don't get your PANT's in a wad.
 
 =cut

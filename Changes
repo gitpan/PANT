@@ -1,6 +1,17 @@
 Revision history for Perl extension PANT.
 
+0.02 2005-01-27  Julian Onions
+
+        * Changed Command to have another option, log, to let the build
+	script pick up a produced log.
+
+	* Changed CallPant to take an optional directory
+	
+	* Changed Command to stream data out, rather than use qx. 
+
+
 0.01  Wed Jan 26 09:56:56 2005
+        - basic functionality, pod and test written.
 	- original version; created by h2xs 1.22 with options
 		-cfn PANT
 

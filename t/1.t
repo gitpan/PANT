@@ -3,7 +3,8 @@
 
 #########################
 
-use Test::More tests => 15;
+use Test::More tests => 18;
+
 BEGIN { use_ok('PANT') };
 
 #########################
@@ -12,15 +13,20 @@ my $outfile = "xxxtest";
 my @testarg = ("-output", $outfile);
 @ARGV = @testarg;
 
-StartPant();
+my $titlename = "This is my title";
+StartPant($titlename);
 EndPant();
 ok(-f "$outfile.html", "HTML output generated from @testarg");
+my $fcontents = FileLoad("$outfile.html");
+
+like($fcontents, qr{<title\s*>$titlename</title\s*>}i, "Title is as expected");
+
 ok(unlink("$outfile.html"), "Remove file works");
 
 @ARGV =@testarg;
 StartPant();
 
-ok(Task(1, "Task works"), "Task works");
+ok(Task(1, "Task works"), "Task works using @testarg");
 ok(Task(1, "2nd Task Works"), "2nd task works");
 ok(Command("echo hello"), "Command echo works");
 
@@ -42,4 +48,15 @@ is(-s "test3.tmp", -s "test2.tmp", "Files are the same size");
 
 ok(unlink(@dellist), "Removed temporary files");
 EndPant();
+$fcontents = FileLoad("$outfile.html");
+like($fcontents, qr{<li\s*>\s*Task works}i, "Task1 appears in output");
+like($fcontents, qr{<li\s*>\s*2nd Task works}i, "Task1 appears in output");
 ok(unlink("$outfile.html"), "Remove file works");
+
+
+sub FileLoad {
+    my $fname = shift;
+    local(*INPUT, $/);
+    open (INPUT, $fname) || die "Can't open file $fname: $!";
+    return <INPUT>;
+}

@@ -1,0 +1,19 @@
+# http://module-build.sourceforge.net/META-spec.html
+#XXXXXXX This is a prototype!!!  It will change in the future!!! XXXXX#
+name:         PANT
+version:      0.02
+version_from: PANT.pm
+installdirs:  site
+requires:
+    Carp:                          0
+    Cwd:                           0
+    Exporter:                      0
+    File::Basename:                0
+    File::Copy:                    0
+    File::Spec::Functions:         0
+    Getopt::Long:                  0
+    IO::File:                      0
+    XML::Writer:                   0.52
+
+distribution_type: module
+generated_by: ExtUtils::MakeMaker version 6.17
