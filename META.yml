@@ -1,7 +1,7 @@
 # http://module-build.sourceforge.net/META-spec.html
 #XXXXXXX This is a prototype!!!  It will change in the future!!! XXXXX#
 name:         PANT
-version:      0.03
+version:      0.04
 version_from: PANT.pm
 installdirs:  site
 requires:
@@ -9,6 +9,7 @@ requires:
     Benchmark:                     0
     Carp:                          0
     Cwd:                           0
+    Digest:                        0
     Exporter:                      0
     File::Basename:                0
     File::Copy:                    0
@@ -20,4 +21,4 @@ requires:
     XML::Writer:                   0.52
 
 distribution_type: module
-generated_by: ExtUtils::MakeMaker version 6.17
+generated_by: ExtUtils::MakeMaker version 6.25

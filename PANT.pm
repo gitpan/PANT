@@ -16,6 +16,7 @@ use Getopt::Long;
 use XML::Writer;
 use IO::File;
 use Exporter;
+use Digest;
 
 our @ISA = qw(Exporter);
 
@@ -27,7 +28,7 @@ our @ISA = qw(Exporter);
 # If you do not need this, moving things directly into @EXPORT or @EXPORT_OK
 # will save memory.
 our %EXPORT_TAGS = ( 'all' => [ qw(
-	Phase Task NewerThan Command CopyFile CopyFiles DateStamp 
+	Phase Task NewerThan Command CopyFile CopyFiles DateStamp FileCompare
 	UpdateFileVersion StartPant EndPant CallPant RunTests Zip) ] );
 
 our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
@@ -35,7 +36,7 @@ our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
 our @EXPORT =  ( @{ $EXPORT_TAGS{'all'} } );
 
 
-our $VERSION = '0.03';
+our $VERSION = '0.04';
 
 my $dryrun = 0;
 my $logname;
@@ -170,7 +171,7 @@ sub NewerThan {
     my $rval = $newests > $newestt;
     $writer->characters($rval ? "Yes" : "No");
     $writer->endTag('li');
-    print "Source $srcfile ", scalar(localtime($newests)), " Dest $tfile ", scalar(localtime($newestt)), " $rval\n";
+#    print "Source $srcfile ", scalar(localtime($newests)), " Dest $tfile ", scalar(localtime($newestt)), " $rval\n";
     return $rval;
 }
 
@@ -296,8 +297,28 @@ sub RunTests {
 
 sub Zip {
     require PANT::Zip;
-    return new PANT::Zip($writer, @_);
+    return new PANT::Zip($writer, @_, dryrun=>$dryrun);
 }
+
+sub FileCompare {
+    my($f1, $f2, $alg) = @_;
+    $alg = "MD5" if (!$alg);
+
+    my $hf1 = Digest->new($alg);
+    my $fh = new IO::File $f1, "r";
+    binmode $fh;
+    Abort("Can't read file $f1") if (!$fh);
+    $hf1->addfile($fh);
+    
+    my $hf2 = Digest->new($alg);
+    $fh = new IO::File $f2, "r";
+    binmode $fh;
+    Abort("Can't read file $f2") if (!$fh);
+    $hf2->addfile($fh);
+
+    return $hf1->digest eq $hf2->digest;
+}
+
 
 1;
 __END__
@@ -496,18 +517,18 @@ Run the list of perl style test files, and capture the result in the output of t
 This function returns a PANT::Zip object to help construct the given zip file.
 See PANT::Zip for more details.
 
+=head2 FileCompare(F1, F2, [alg])
+
+This function compares two files for equality using the given hash algorithm.
+If no algorithm is given, it will use MD5. Returns true if they are the same.
+
 =head1 SEE ALSO
 
 Makes use of XML::Writer to construct the build log.
 
-=head1 FUTURE
-
-A scheme to run perl test-like frame work and assess the results needs
-to be incorporated.  
-
 =head1 AUTHOR
 
-Julian Onions, E<lt>julianonions@yahoo.nospam-co.uk<gt>
+Julian Onions, E<lt>julianonions@yahoo.nospam-co.ukE<gt>
 
 =head1 COPYRIGHT AND LICENSE
 

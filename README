@@ -1,4 +1,4 @@
-PANT version 0.03
+PANT version 0.04
 =================
 
 This is a set of useful functions to facilitate building packages in
@@ -22,10 +22,9 @@ To install this module type the following:
 
 DEPENDENCIES
 
-This module requires these other modules and libraries:
+This module requires these other non-standard modules and libraries:
 
-Exporter, Carp, CWD, File::Copy, File::Basename,
-Getopt::Long, XML::Writer, IO::File
+XML::Writer, Archive::Zip
 
 COPYRIGHT AND LICENCE
 

@@ -1,5 +1,13 @@
 Revision history for Perl extension PANT.
+	
+0.04 2005-02-01  Julian Onions
 
+	* Add dryrun support to the zip commands
+	* added compression options to the zip
+	* Added the filecompared based on hash technology
+	* small restructure of the Test stuff
+	 
+	
 0.03 2005-01-31  Julian Onions
 	* Added the treesource to the NewerThan command
 
@@ -22,3 +30,4 @@ Revision history for Perl extension PANT.
 	- original version; created by h2xs 1.22 with options
 		-cfn PANT
 
+-*- mode: change-log -*-

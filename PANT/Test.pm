@@ -27,8 +27,12 @@ our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
 
 our @EXPORT = qw( );
 
-our $VERSION = '0.03';
+our $VERSION = '0.04';
 
+# list of table column headers
+our @headers = ('Failed Test', 'Stat', 'Wstat', 'Total', 'Fail', 'Failed', 'List of failed tests');
+# list of hash keys
+our @testhashkeys = qw(name estat wstat max failed percent canon);
 
 sub new {
     my($clsname, $writer, @args) =@_;
@@ -54,7 +58,6 @@ sub RunTests {
     }
     else {
 
-	my @headers = ('Failed Test', 'Stat', 'Wstat', 'Total', 'Fail', 'Failed', 'List of failed tests');
 	my($tot, $failedtests) = Test::Harness::_run_all_tests(@tests);
 	$writer->dataElement('li',
 			     sprintf(" %d/%d subtests failed, %.2f%% okay.",
@@ -71,8 +74,7 @@ sub RunTests {
 	    $writer->endTag('tr');
 	    foreach my $t (sort keys %{ $failedtests }) {
 		$writer->startTag('tr');
-		my @things = qw(name estat wstat max failed percent canon);
-		foreach my $h (@things) {
+		foreach my $h (@testhashkeys) {
 		    $writer->dataElement('td', $failedtests->{$t}->{$h});
 		}
 		$writer->endTag('tr');
@@ -140,7 +142,7 @@ Makes use of XML::Writer to construct the build log.
 
 =head1 AUTHOR
 
-Julian Onions, E<lt>julianonions@yahoo.nospam-co.uk<gt>
+Julian Onions, E<lt>julianonions@yahoo.nospam-co.ukE<gt>
 
 =head1 COPYRIGHT AND LICENSE
 

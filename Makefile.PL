@@ -7,19 +7,19 @@ WriteMakefile(
     'VERSION_FROM'	=> 'PANT.pm', # finds $VERSION
     'PREREQ_PM'		=> {
 	XML::Writer=>0.52, 
-	Carp=>0, 
-	Cwd=>0, 
-	File::Copy=>0, 
-    	File::Basename=>0,
-    	File::Spec::Functions=>0, 
-    	Getopt::Long=>0,
-    	IO::File=>0, 
-    	Exporter=>0, 
-    	Archive::Zip=>0,
-    	Test::Harness=>0,
-	File::Find=>0,
+	  Carp=>0, 
+	  Cwd=>0, 
+	  File::Copy=>0, 
+	  File::Basename=>0,
+	  File::Spec::Functions=>0, 
+	  Getopt::Long=>0,
+	  IO::File=>0, 
+	  Exporter=>0, 
+	  Archive::Zip=>0,
+	  Test::Harness=>0,
+	  File::Find=>0,
 	  Benchmark=>0,
-	  
+	  Digest=>0
     	}, 
     ($] >= 5.005 ?    ## Add these new keywords supported since 5.005
       (ABSTRACT_FROM => 'PANT.pm', # retrieve abstract from module
