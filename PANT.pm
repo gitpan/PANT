@@ -12,6 +12,7 @@ use File::Copy;
 use File::Basename;
 use File::Spec::Functions qw(:ALL);
 use File::Find;
+use File::Path;
 use Getopt::Long;
 use XML::Writer;
 use IO::File;
@@ -29,6 +30,7 @@ our @ISA = qw(Exporter);
 # will save memory.
 our %EXPORT_TAGS = ( 'all' => [ qw(
 	Phase Task NewerThan Command CopyFile CopyFiles DateStamp FileCompare
+        MoveFile MoveFiles MakeTree RmTree
 	UpdateFileVersion StartPant EndPant CallPant RunTests Zip) ] );
 
 our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
@@ -36,7 +38,7 @@ our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
 our @EXPORT =  ( @{ $EXPORT_TAGS{'all'} } );
 
 
-our $VERSION = '0.06';
+our $VERSION = '0.07';
 
 my $dryrun = 0;
 my ($logvolume, $logdirectory, $logfilename, $logstem, $logsuffix);
@@ -271,6 +273,29 @@ sub CopyFile {
     }
     return 1;
 }
+# move over several files into a new directory
+sub MoveFiles {
+    my ($src, $dest) = @_;
+    Abort("$dest is not a directory") if (!$dryrun && ! -d $dest);
+    foreach my $sfile (glob $src) {
+	my $bname = basename($sfile);
+	return 0 if MoveFile($sfile, "$dest/$bname") == 0;
+    }
+    return 1;
+    
+}
+
+# copy a file and possibly rename.
+sub MoveFile {
+    my ($src, $dest) = @_;
+    $writer->dataElement('li', "Move $src to $dest\n");
+    return 1 if ($dryrun);
+    if( move($src, $dest) == 0) {
+	$writer->dataElement('li', "Copy failed: $!\n");
+	return 0;
+    }
+    return 1;
+}
 
 sub UpdateFileVersion {
     my ($file, %patterns) = @_;
@@ -337,8 +362,29 @@ sub FileCompare {
     return $hf1->digest eq $hf2->digest;
 }
 
+sub MakeTree {
+    my $dir = shift;
+    $writer->dataElement('li', "Create directory tree $dir\n");
+    return 1 if ($dryrun);
+    eval { mkpath($dir) };
+    if ($@) {
+	$writer->dataElement('li', "Couldn't create directory $dir: $@");
+	return 0;
+    }
+    return -d $dir;
+}
+
+
+sub RmTree {
+    my $dir = shift;
+    $writer->dataElement('li', "Remove tree $dir\n");
+    return 1 if ($dryrun);
+    rmtree($dir);
+    return ! -d $dir;
+}
 
 1;
+
 __END__
 # Below is stub documentation for your module. You'd better edit it!
 
@@ -508,6 +554,25 @@ to the given directory. The names will remain the same.
 
 This function copies an individual file from the source to the
 destination. It allows for renaming.
+
+=head2 MoveFiles(source, destdir)
+
+This function moves all the files that match the source glob pattern
+to the given directory. The names will remain the same.
+
+=head2 MoveFile(source, dest)
+
+This function moves an individual file from the source to the
+destination. It allows for renaming.
+
+=head2 RmTree(dir)
+
+This function removes the entire tree starting at the given directory.
+Obviuosly be careful!
+
+=head2 MakeTree(dir)
+
+Create a given directory, and an required intermediate paths.
 
 =head2 UpdateFileVersion(file, patterns)
 

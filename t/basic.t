@@ -3,7 +3,7 @@
 
 #########################
 
-use Test::More tests => 23;
+use Test::More tests => 30;
 
 BEGIN { use_ok('PANT') };
 
@@ -49,20 +49,36 @@ ok(NewerThan(sources=>[qw(test2.tmp)], targets=>[qw(test.tmp)]), "Older test");
 
 ok(CopyFile("test5.tmp", "test6.tmp") == 0, "Copied non existant file failed");
 ok(CopyFile("test2.tmp", "test3.tmp"), "Copied file");
-push(@dellist, "test3.tmp");
-ok(-f "test3.tmp", "test3.tmp exists");
-is(-s "test3.tmp", -s "test2.tmp", "Files are the same size");
+ok(MoveFile("test3.tmp", "test4.tmp"), "Moved file");
+ok(! -f "test3.tmp", "test3.tmp has gone");
+ok(-f "test4.tmp", "test4.tmp exists");
+is(-s "test4.tmp", -s "test2.tmp", "Files are the same size");
 
-ok(FileCompare("test2.tmp", "test3.tmp"), "Files are the same contents");
-ok(FileCompare("test2.tmp", "test3.tmp", "MD5"), "Files are the same contents (MD5)");
+ok(FileCompare("test2.tmp", "test4.tmp"), "Files are the same contents");
+ok(FileCompare("test2.tmp", "test4.tmp", "MD5"), "Files are the same contents (MD5)");
+
+push(@dellist, "test4.tmp");
 
 SKIP: {
 	eval { new Digest("SHA-1"); };
 	skip "No Digest::SHA-1 found", 1  if ($@);
-	ok(FileCompare("test2.tmp", "test3.tmp", "SHA-1"), "Files are the same contents (SHA-1)");
+	ok(FileCompare("test2.tmp", "test4.tmp", "SHA-1"), "Files are the same contents (SHA-1)");
 }
 ok(unlink(@dellist), "Removed temporary files");
+
+
+ok(MakeTree("testdir/mytest"), "Made a new directory");
+ok(-d "testdir", "Testdir exists");
+ok(-d "testdir/mytest", "mytest subdirectory exists");
+ok(RmTree("testdir"), "Removed testdir");
+ok(! -d "testdir", "testdir has been removed");
+
+
+
 EndPant();
+
+
+
 $fcontents = FileLoad($outfile);
 like($fcontents, qr{<li\s*>\s*Task works}i, "Task1 appears in output");
 like($fcontents, qr{<li\s*>\s*2nd Task works}i, "Task2 appears in output");

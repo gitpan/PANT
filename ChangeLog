@@ -1,4 +1,10 @@
-2005-02-03  Julian Onions  <jpo@corsair.nexor.co.uk>
+2005-02-07  Julian Onions 
+
+	* Version 0.07
+	* PANT.pm - added the Move* and MakeTree/RmTree commands.
+	* added tests to check these.
+
+2005-02-03  Julian Onions 
 
 	* Version 0.06
 	* PANT.pm: Added better diagnostics to the Copy* commands.

@@ -18,6 +18,7 @@ WriteMakefile(
 	  Archive::Zip=>0,
 	  Test::Harness=>0,
 	  File::Find=>0,
+	File::Path=>0,
 	  Benchmark=>0,
 	  Digest=>0
     	}, 
