@@ -6,12 +6,13 @@ WriteMakefile(
     'NAME'		=> 'PANT',
     'VERSION_FROM'	=> 'PANT.pm', # finds $VERSION
     'PREREQ_PM'		=> {
-	XML::Writer=>0.52, 
+	XML::Writer=>0, 
 	  Carp=>0, 
 	  Cwd=>0, 
 	  File::Copy=>0, 
 	  File::Basename=>0,
 	  File::Spec::Functions=>0, 
+	  File::Copy::Recursive=>0,
 	  Getopt::Long=>0,
 	  IO::File=>0, 
 	  Exporter=>0, 

@@ -9,6 +9,7 @@ use warnings;
 use Carp;
 use Cwd;
 use File::Copy;
+use File::Copy::Recursive;
 use File::Basename;
 use File::Spec::Functions qw(:ALL);
 use File::Find;
@@ -18,6 +19,7 @@ use XML::Writer;
 use IO::File;
 use Exporter;
 use Digest;
+use Config;
 
 our @ISA = qw(Exporter);
 
@@ -30,6 +32,7 @@ our @ISA = qw(Exporter);
 # will save memory.
 our %EXPORT_TAGS = ( 'all' => [ qw(
 	Phase Task NewerThan Command CopyFile CopyFiles DateStamp FileCompare
+	CopyTree
         MoveFile MoveFiles MakeTree RmTree Cvs FindPatternInFile
 	UpdateFileVersion StartPant EndPant CallPant RunTests Zip) ] );
 
@@ -38,12 +41,19 @@ our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
 our @EXPORT =  ( @{ $EXPORT_TAGS{'all'} } );
 
 
-our $VERSION = '0.11';
+our $VERSION = '0.12';
 
 my $dryrun = 0;
 my ($logvolume, $logdirectory, $logfilename, $logstem, $logsuffix);
 my $logcount= 1;
 my $writer;
+
+my $this_perl = $^X; 
+if ($^O ne 'VMS') {
+    $this_perl .= $Config{_exe}
+    unless $this_perl =~ m/$Config{_exe}$/i;
+}
+
 
 sub StartPant {
     my $title = shift || "Build log";
@@ -92,11 +102,12 @@ sub CallPant {
     $writer->startTag('li');
     
     $writer->characters("Calling subsidiary build $build.");
-    my $dir = exists $args{directory} ? $args{directory} . "/" : "";
-    my $logfile = catpath($logvolume, $logdirectory, 
-			  "$logstem-$logcount$logsuffix");
+    my $dir = exists $args{directory} ? $args{directory} : ".";
+    my $logthisname =  $args{logname} || "$logstem-$logcount$logsuffix";
+    $logthisname .= $logsuffix if ($logthisname !~ /\.[^.]+/);
+    my $logfile = catpath($logvolume, $logdirectory, $logthisname);
     my $relfile = abs2rel($logfile, $dir);
-    my $rv = Command("$^X $build -output $relfile", 
+    my $rv = Command("$this_perl $build -output $relfile", 
 		     log=>$logfile, @_);
     $logcount ++;
     $writer->endTag('li');   
@@ -261,6 +272,12 @@ sub CopyFiles {
     return 1;
     
 }
+# copy over several files into a new directory
+sub CopyTree {
+    my ($src, $dest) = @_;
+    File::Copy::Recursive::rcopy($src, $dest);
+    return 1;
+}
 
 # copy a file and possibly rename.
 sub CopyFile {
@@ -303,8 +320,8 @@ sub UpdateFileVersion {
     $writer->startTag('li');
     $writer->characters("Update file $file\n");
     $writer->startTag('ul');
-    open(FILE, $file) || return 0;
-    open(FILEOUT, ">$file.x") || return 0;
+    open(FILE, $file) || do { $writer->characters("Can't open file $file: $!"); return 0; };
+    open(FILEOUT, ">$file.$$") || do {  $writer->characters("Can't open file $file.$$: $!"); return 0; };
     while (my $line = <FILE>) {
 	while( my($k, $v) = each %patterns) {
 	    if ($line =~ s/$k/$v/ee) {
@@ -320,7 +337,7 @@ sub UpdateFileVersion {
     $writer->endTag('ul');
     $writer->endTag('li');
     return 1 if ($dryrun);
-    return rename("$file.x", $file);
+    return rename("$file.$$", $file);
 }
 
 sub AddOutput {
@@ -334,7 +351,7 @@ sub AddElement {
 
 sub RunTests {
     require PANT::Test;
-    my $test = new PANT::Test($writer);
+    my $test = new PANT::Test($writer, dryrun=>$dryrun);
     return $test->RunTests(@_);
 }
 
@@ -509,6 +526,11 @@ Options include
 Change to the given directory to run the subsidiary build. The log
 path should be modified so it fits.
 
+=item logname=>name
+
+Name the log file that it will write to this. If this is not given, a
+name will be made up for you.
+
 =back
 
 =head2 Phase([list])
@@ -584,6 +606,11 @@ to the given directory. The names will remain the same.
 
 This function copies an individual file from the source to the
 destination. It allows for renaming.
+
+=head2 CopyTree(source, dest)
+
+This function copies an entire tree hierarchy from the source to the 
+destination. It makes use of File::Copy::Recursive routines to do this.
 
 =head2 MoveFiles(source, destdir)
 

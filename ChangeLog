@@ -1,3 +1,9 @@
+2005-03-04  Julian Onions
+
+	* PANT.pm: some tinkering with the CallPant routine
+	* PANT.pm: Added the CopyTree routine
+	* PANT.pm: Make dryrun apply to Tests - DOH!
+
 2005-02-28  Julian Onions
 
 	* Version 0.11

@@ -1,4 +1,4 @@
-PANT version 0.11
+PANT version 0.12
 =================
 
 This is a set of useful functions to facilitate building packages in
@@ -24,7 +24,7 @@ DEPENDENCIES
 
 This module requires these other non-standard modules and libraries:
 
-XML::Writer, Archive::Zip
+XML::Writer, Archive::Zip, File::Copy::Recursive
 
 COPYRIGHT AND LICENCE
 

@@ -35,7 +35,6 @@ my $contents = FileLoad($outfile);
 ok($contents, "Contents of $outfile read");
 like($contents, qr/href=\"[^\"]+\"/i, "Found the reference to the sub html");
 my($href) = $contents =~ /href=\"([^\"]+)\"/i; 
-diag("Found href $href");
 ok(-f $href, "Sub pant file $href exists");
 push(@dellist, $href);
 my($v1,$d1, $f1) = splitpath(rel2abs($outfile));
@@ -44,8 +43,6 @@ cmp_ok($v1, 'eq', $v2, "Volumes $v1 + $v2 are the same");
 cmp_ok($d1, 'eq', $d2, "Directories $d1 + $d2 are the same");
 ok(unlink(@dellist), "Clean up old files");
 @dellist = ();
-
-
 
 WriteFile("t/subpant2.pl", <<'EOF');
 #! perl -w

@@ -3,7 +3,7 @@
 
 #########################
 
-use Test::More tests => 30;
+use Test::More tests => 33;
 
 BEGIN { use_ok('PANT') };
 
@@ -70,6 +70,9 @@ ok(unlink(@dellist), "Removed temporary files");
 ok(MakeTree("testdir/mytest"), "Made a new directory");
 ok(-d "testdir", "Testdir exists");
 ok(-d "testdir/mytest", "mytest subdirectory exists");
+ok(CopyTree("testdir", "newtestdir"), "Copy tree suceeded");
+ok(-d "newtestdir", "New directory exists");
+ok(-d "newtestdir/mytest", "New directory exists");
 ok(RmTree("testdir"), "Removed testdir");
 ok(! -d "testdir", "testdir has been removed");
 
