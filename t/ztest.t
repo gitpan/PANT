@@ -30,8 +30,8 @@ like($contents, qr{title}i, "Test summary appears");
     ok($zip, "Zip file read");
     ok($zip->memberNamed( 'ChangeLog' ), "ChangeLog found");
     ok(!$zip->memberNamed( 'Changes' ), "Changes not found");
-    ok($zip->memberNamed( 'tests/1.t' ), "tests/1.t found");
-    ok(!$zip->memberNamed( '1/1.t' ), "1/1.t not found");
+    ok($zip->memberNamed( 'tests/basic.t' ), "tests/basic.t found");
+    ok(!$zip->memberNamed( 't/basic.t' ), "t/basic.t not found");
 }
 
 unlink(@delfiles);

@@ -50,7 +50,7 @@ ok(unlink(@dellist), "Removed temporary files");
 EndPant();
 $fcontents = FileLoad("$outfile.html");
 like($fcontents, qr{<li\s*>\s*Task works}i, "Task1 appears in output");
-like($fcontents, qr{<li\s*>\s*2nd Task works}i, "Task1 appears in output");
+like($fcontents, qr{<li\s*>\s*2nd Task works}i, "Task2 appears in output");
 ok(unlink("$outfile.html"), "Remove file works");
 
 

@@ -6,7 +6,8 @@ PANT.pm
 PANT/Test.pm
 PANT/Zip.pm
 README
-t/1.t
+t/basic.t
 t/fake.t
 t/ptest.t
+t/updatefile.t
 t/ztest.t

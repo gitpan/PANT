@@ -1,5 +1,10 @@
 Revision history for Perl extension PANT.
 
+0.03 2005-01-31  Julian Onions
+	* Added the treesource to the NewerThan command
+
+	* New test for UpdateFileVersion stuff.
+
 0.02 2005-01-27  Julian Onions
 
         * Changed Command to have another option, log, to let the build
@@ -8,6 +13,8 @@ Revision history for Perl extension PANT.
 	* Changed CallPant to take an optional directory
 	
 	* Changed Command to stream data out, rather than use qx. 
+	
+	* Added Test and Zip sub-modules
 
 
 0.01  Wed Jan 26 09:56:56 2005

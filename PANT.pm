@@ -11,6 +11,7 @@ use Cwd;
 use File::Copy;
 use File::Basename;
 use File::Spec::Functions;
+use File::Find;
 use Getopt::Long;
 use XML::Writer;
 use IO::File;
@@ -34,7 +35,7 @@ our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
 our @EXPORT =  ( @{ $EXPORT_TAGS{'all'} } );
 
 
-our $VERSION = '0.02';
+our $VERSION = '0.03';
 
 my $dryrun = 0;
 my $logname;
@@ -47,7 +48,6 @@ sub StartPant {
     GetOptions("output=s"=>\$logname,
     		n=>\$dryrun,
     		dryrun=>\$dryrun);
-    $writer = 0;
     my $fh = *STDOUT;
     if ($logname) {
 	$fh = new IO::File "$logname.html", "w";
@@ -113,7 +113,10 @@ sub NewerThan {
     my (%args) = @_;
     $writer->startTag('ul') if ! $writer->in_element('ul');
     $writer->startTag('li');
-    $writer->characters("Are any of @{ $args{sources} } newer than @{ $args{targets} }?  ");
+    my $srcs = "";
+    $srcs .= " the files @{ $args{sources} }" if exists $args{sources};
+    $srcs .= " the directories @{ $args{treesources} }" if exists $args{treesources};
+    $writer->characters("Are any of $srcs newer than @{ $args{targets} }?  ");
     my $newestt = time;
     my $tfile = "none";
     foreach my $glob (@{ $args{targets} }) {
@@ -130,27 +133,45 @@ sub NewerThan {
 	    }
     	}
     }
-    my $newests = 0;
+    my $newests = 1;
     my $srcfile = "none";
-    foreach my $glob (@{ $args{sources} }) {
-	foreach my $sfile (glob $glob) {
-	    my $t = (stat($sfile))[9];
-	    if ($t) {
-		$newests = $t  if ($t > $newests);
-		$srcfile = $sfile;
+    if ($newestt > 0) {
+	GLOB: foreach my $glob (@{ $args{sources} }) {
+	    foreach my $sfile (glob $glob) {
+		my $t = (stat($sfile))[9];
+		if ($t) {
+		    if ($t > $newests) {
+			$srcfile = $sfile;
+			$newests = $t  
+		    }
+		    last GLOB if ($newests > $newestt);
+		}
+		else {
+		    carp "$sfile doesn't exist\n";
+		    Abort("$sfile doesn't exist\n") if ($args{dieonerror});
+		    $newests = 0;
+		}
 	    }
-	    else {
-		carp "$sfile doesn't exist\n";
-		Abort("$sfile doesn't exist\n") if ($args{dieonerror});
-		$newests = 0;
+	}
+	my $wanted = sub { 
+	    my $t = (stat($_))[9]; 
+	    if ($t > $newestt) {
+		$srcfile = $_;
+		$newests = $t;
+	    }
+	};
+	foreach my $glob (@{ $args{treesources} }) {
+	    foreach my $sfile (glob $glob) {
+		find($wanted, $sfile);
+		print "Check tree $sfile\n";
 	    }
 	}
     }
     my $rval = $newests > $newestt;
     $writer->characters($rval ? "Yes" : "No");
     $writer->endTag('li');
-    # print "Source $srcfile ", scalar(localtime($newests)), " Dest $tfile ", scalar(localtime($newestt)), " $rval\n";
-    return $newests > $newestt;
+    print "Source $srcfile ", scalar(localtime($newests)), " Dest $tfile ", scalar(localtime($newestt)), " $rval\n";
+    return $rval;
 }
 
 # checks a task succeeded
@@ -243,7 +264,9 @@ sub UpdateFileVersion {
     while (my $line = <FILE>) {
 	while( my($k, $v) = each %patterns) {
 	    if ($line =~ s/$k/$v/ee) {
-		$writer->dataElement("li","Changed line '$line'\n");
+		my $vv;
+		eval "\$vv = $v";
+		$writer->dataElement("li","Changed line '$line' '$1' '$2' '$v' $vv\n");
 	    }
     	}
 	print FILEOUT $line;
@@ -294,7 +317,7 @@ PANT - Perl extension for ANT/NANT like build environments
   Task(Command("cvs update"), "Fetch the latest code");
   Phase(2, "Build");
   Task(UpdateFileVersion("h/version.h",
-	 qr/(#define\s*VERSION\s+)(\d+)/=>"\$1 . (\$2+1)"),
+	 qr/(#define\s*VERSION\s+)(\d+)/=>q{"$1" . ($2+1)"},
 	 "Version file updated");
   Task(Command("make all"), "Built distribution");
   Phase(3, "Deploy");
@@ -385,12 +408,30 @@ phase, a build phase, and followed up by a test and deployment phase.
 This function returns a datestamp in a common format. Its is intended
 for use in logging output, and also in CVS/SVN type retrievals.
 
-=head2 NewerThan(sources=>[qw(f1 f2*.txt)], targets=>[build])
+=head2 NewerThan(sources=>[qw(f1 f2*.txt)], targets=>[build], ...)
 
-This function provides a make like dependency checker. The sources is
-a glob'able list of files to look at. The targets are what is intended
-to build. The function will return true if any of the sources are
-newer than the targets. 
+This function provides a make like dependency checker.
+It has the following arguments,
+
+=over 4
+
+=item sources
+
+A list of wildcard (glob'able) files that are the source.
+
+=item treesources
+
+A list of wildcard directories that are descended for source files. 
+Currently all files in the tree are considered possibilities.
+
+=item targets
+
+A list of wildcard (glob'able) files that are the target
+
+=back
+
+The function will return true if any of the sources are
+newer than the oldest of the targets. 
 
 =head2 Task(result, message)
 
@@ -450,6 +491,10 @@ directly and takes the same syntax.
 
 Run the list of perl style test files, and capture the result in the output of the log.
 
+=head2 Zip(file)
+
+This function returns a PANT::Zip object to help construct the given zip file.
+See PANT::Zip for more details.
 
 =head1 SEE ALSO
 
