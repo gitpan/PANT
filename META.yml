@@ -1,7 +1,7 @@
 # http://module-build.sourceforge.net/META-spec.html
 #XXXXXXX This is a prototype!!!  It will change in the future!!! XXXXX#
 name:         PANT
-version:      0.15
+version:      0.16
 version_from: PANT.pm
 installdirs:  site
 requires:
@@ -12,6 +12,7 @@ requires:
     Digest:                        0
     Exporter:                      0
     File::Basename:                0
+    File::Compare:                 0
     File::Copy:                    0
     File::Copy::Recursive:         0
     File::Find:                    0

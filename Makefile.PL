@@ -13,6 +13,7 @@ WriteMakefile(
 	  File::Basename=>0,
 	  File::Spec::Functions=>0, 
 	  File::Copy::Recursive=>0,
+	  File::Compare=>0,
 	  Getopt::Long=>0,
 	  IO::File=>0, 
 	  Exporter=>0, 

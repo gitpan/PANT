@@ -3,7 +3,7 @@
 
 #########################
 
-use Test::More tests => 35;
+use Test::More tests => 33;
 
 BEGIN { use_ok('PANT') };
 
@@ -55,15 +55,9 @@ ok(-f "test4.tmp", "test4.tmp exists");
 is(-s "test4.tmp", -s "test2.tmp", "Files are the same size");
 
 ok(FileCompare("test2.tmp", "test4.tmp"), "Files are the same contents");
-ok(FileCompare("test2.tmp", "test4.tmp", "MD5"), "Files are the same contents (MD5)");
 
 push(@dellist, "test4.tmp");
 
-SKIP: {
-	eval { new Digest("SHA-1"); };
-	skip "No Digest::SHA-1 found", 1  if ($@);
-	ok(FileCompare("test2.tmp", "test4.tmp", "SHA-1"), "Files are the same contents (SHA-1)");
-}
 ok(unlink(@dellist), "Removed temporary files");
 
 

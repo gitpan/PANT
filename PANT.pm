@@ -10,6 +10,7 @@ use Carp;
 use Cwd;
 use File::Copy;
 use File::Copy::Recursive;
+use File::Compare ();
 use File::Basename;
 use File::Spec::Functions qw(:ALL);
 use File::Find;
@@ -41,7 +42,7 @@ our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
 our @EXPORT =  ( @{ $EXPORT_TAGS{'all'} } );
 
 
-our $VERSION = '0.15';
+our $VERSION = '0.16';
 
 my $dryrun = 0;
 my ($logvolume, $logdirectory, $logfilename, $logstem, $logsuffix);
@@ -54,6 +55,117 @@ if ($^O ne 'VMS') {
     unless $this_perl =~ m/$Config{_exe}$/i;
 }
 
+=head1 NAME
+
+PANT - Perl extension for ANT/NANT like build environments
+
+=head1 SYNOPSIS
+
+  perl buildall.pl -output buildlog
+
+  use PANT;
+  StartPant();
+  Phase(1, "Update");
+  Task(Command("cvs update"), "Fetch the latest code");
+  Phase(2, "Build");
+  Task(UpdateFileVersion("h/version.h",
+	 qr/(#define\s*VERSION\s+)(\d+)/=>q{"$1" . ($2+1)},
+	 "Version file updated");
+  Task(Command("make all"), "Built distribution");
+  Phase(3, "Deploy");
+  Task(Command("make distribution"), "Distribution built");
+  if (NewerThan(sources=>["myexe"], targets=>["/usr/bin/myexe"])) {
+     CopyFiles("myexe", "/usr/bin");
+  }
+  EndPant();
+
+=head1 ABSTRACT
+
+  This is a module to help construct automated build environments.
+  The inspiration came from the ANT/NANT build environments which use
+  XML to describe a make like syntax of dependencies. For various
+  reasons none of these were suitable for my purposes, and I suspect
+  that eventually you will end up writing something pretty similar to
+  perl in XML to cater for all the things you want to do.  Also a
+  module named PANT was just too good a name to miss!
+
+  This module draws on some of the ideas in ANT/NANT, and also in the
+  Test::Mode module for ways to do things.  This module is therefore a
+  collection of tools to help automate processes, and provide a build
+  log of what happened, so remote builds can be observed.
+
+  The basic philosophy is that you can probably use make or visual studio
+  or similar to do the heavy building. There is no real need to replicate 
+  that. However stuff like checking out of CVS/SVN repositories, updating
+  version numbers, checking it back in, running test harnesses, and similar
+  are things that make is not good at. 
+
+  XML is not a programming language, but you can describe a lot of
+  what you want using it, which is what ANT/NANT basically do. However
+  there is always something you want to do, which can't be described
+  in the current description language. In these cases you can call out
+  to an external routine to do things.
+
+  However it seems much easier to provide a number of useful
+  subroutines in a scripting language, which help you build
+  things. Then if you need to do something slightly of piste, you have
+  all the power right there.
+
+  The other thing I want to know about is "did it work" and if it
+  didn't, what went wrong? To this end plenty of logging is required so
+  the build can be tracked. As the build is probably going to be remote,
+  HTML seems the obvious choice to report in, so you can just look at it
+  from a web server.
+
+=head1 DESCRIPTION
+
+This module provides various useful functions to help in the automated
+build of a project and to produce a build log. It is still in
+development, and may well change shape in the light of experience.
+
+=head1 EXPORTS
+
+=head2 StartPant([title],[style=>stuff])
+
+This call should be the first call into the module. It does some
+intialisation, and parses command line arguments in @ARGV. It takes
+the following arguments.
+
+=over 4
+
+=item String
+
+The first argument is a string, and is used as the title of the web page if present.
+If not present it will be called "Build Log".
+
+=item style=>stuff
+
+This argument if present signals some style data to include. This will
+be included in a E<lt>styleE<gt> tag. This allows you to apply different styles to
+the generated page.
+
+=item stylelink=>href
+
+This argument if present directs the inclusion of a style sheet external link.
+
+=back
+
+
+Supported command line options are 
+
+=over 4
+
+=item -output file
+
+Write the output to the given file.
+
+=item -dryrun
+
+Simulate a run without actually doing anything.
+
+=back
+
+=cut 
 
 sub StartPant {
     my $title = shift || "Build log";
@@ -96,6 +208,13 @@ sub StartPant {
     $writer->startTag('body');
 }
 
+=head2 EndPant()
+
+This function finishes up the run, and should be the last call into
+the module. It completes the build log in a tidy way.
+
+=cut 
+
 sub EndPant {
     $writer->endTag('ul') if $writer->in_element('ul');
     $writer->endTag('body');
@@ -103,6 +222,33 @@ sub EndPant {
     $writer->end();
     undef $writer; # close files and flush
 }
+
+
+=head2 CallPant(name, options)
+
+This function allows you to call a subsidiary pant build. The build
+will be run and waited for. A reference in the current log will be
+made to the new log. It is assumed that the subsidiary build is also
+using PANT as it passes some command line arguments to sort out the
+logging.
+
+Options include
+
+=over 4
+
+=item directory=>place
+
+Change to the given directory to run the subsidiary build. The log
+path should be modified so it fits.
+
+=item logname=>name
+
+Name the log file that it will write to this. If this is not given, a
+name will be made up for you.
+
+=back
+
+=cut
 
 # call a subsidiary build
 sub CallPant {
@@ -123,14 +269,35 @@ sub CallPant {
     return $rv;
 }
 
+=head2 Phase([list])
+
+This function is purely for help in dividing up the build log. It
+inserts a heading into the log allowing you to divide the build up
+into a variety of parts. You might have a pre-build cvs checkput
+phase, a build phase, and followed up by a test and deployment phase.
+
+The list is used as the contents of the header, and the first element
+of the list is used as an HTML anchor in case you want to refer to it.
+
+=cut
+
 # a phase marker, for dividing up output a bit
 sub Phase {
     $writer->endTag('ul') if $writer->in_element('ul');
+    $writer->startTag('a', name=>$_[0]);
     $writer->startTag('h1');
     $writer->characters("@_");
     $writer->endTag('h1');
+    $writer->endTag('a');
     $writer->startTag('ul');
 }
+
+=head2 DateStamp 
+
+This function returns a datestamp in a common format. Its is intended
+for use in logging output, and also in CVS/SVN type retrievals.
+
+=cut
 
 ## cvs like date/time
 sub DateStamp {
@@ -140,6 +307,34 @@ sub DateStamp {
     
     return "$year-$mon-$mday $hour:$min:$sec";
 }
+
+
+=head2 NewerThan(sources=>[qw(f1 f2*.txt)], targets=>[build], ...)
+
+This function provides a make like dependency checker.
+It has the following arguments,
+
+=over 4
+
+=item sources
+
+A list of wildcard (glob'able) files that are the source.
+
+=item treesources
+
+A list of wildcard directories that are descended for source files. 
+Currently all files in the tree are considered possibilities.
+
+=item targets
+
+A list of wildcard (glob'able) files that are the target
+
+=back
+
+The function will return true if any of the sources are
+newer than the oldest of the targets. 
+
+=cut
 
 # compares sources and targets
 # Pick oldest of the targets
@@ -209,6 +404,14 @@ sub NewerThan {
     return $rval;
 }
 
+=head2 Task(result, message)
+
+This command evaluates the first argument to see if it is true, and
+prints the second argument into the log. If the first argument is
+false, the build will abort.
+
+=cut
+
 # checks a task succeeded
 sub Task {
     my $test = shift;
@@ -217,14 +420,37 @@ sub Task {
     return 1;
 }
 
+=head2 Abort(list)
+
+This function aborts the build and is called internally when thigns go
+wrong.
+
+=cut
+
 # give up and go home
 sub Abort {
-    $writer->startTag('font', color=>"red");
-    $writer->characters(Carp::longmess("@_"));
-    $writer->endTag('font');
+    $writer->dataElement('span', Carp::longmess("@_"), 
+			 style=>"color:red;font-weight:bold");
     EndPant();
     confess @_;
 }
+=head2 Command(cmd, options)
+
+This function runs the given external command, capturing the output
+for the log, and evaluating the return code to see if it worked.
+
+=over 4
+
+Currently there is only one option 
+
+=item directory=>"somewhere"
+
+This will cause the command to run in the given directory, rather than
+being where you happen to be currently.
+
+=back
+
+=cut
 
 # run a command, in a directory maybe
 sub Command {
@@ -273,6 +499,12 @@ sub Command {
     do { chdir($cdir) || Abort("Can't change back to $cdir: $!"); } if ($args{directory});
     return $retval;
 }
+=head2 CopyFiles(source, destdir)
+
+This function copies all the files that match the source glob pattern
+to the given directory. The names will remain the same.
+
+=cut
 
 # copy over several files into a new directory
 sub CopyFiles {
@@ -285,13 +517,34 @@ sub CopyFiles {
     return 1;
     
 }
+
+=head2 CopyTree(source, dest)
+
+This function copies an entire tree hierarchy from the source to the 
+destination. It makes use of File::Copy::Recursive routines to do this.
+
+=cut
+
 # copy over several files into a new directory
 sub CopyTree {
     my ($src, $dest) = @_;
     $writer->dataElement('li', "Copy $src tree to $dest\n");
-    return File::Copy::Recursive::rcopy($src, $dest) if (!$dryrun);
+    if (!$dryrun) {
+	my($nfdirs,$ndirs,$depth) = File::Copy::Recursive::rcopy($src, $dest);
+	$writer->dataElement('li', 
+			     "Copied $nfdirs files and directories, $ndirs directories to a depth of $depth");
+	
+	return $nfdirs;
+    }
     return 1;
 }
+
+=head2 CopyFile(source, dest)
+
+This function copies an individual file from the source to the
+destination. It allows for renaming.
+
+=cut
 
 # copy a file and possibly rename.
 sub CopyFile {
@@ -304,6 +557,15 @@ sub CopyFile {
     }
     return 1;
 }
+
+
+=head2 MoveFiles(source, destdir)
+
+This function moves all the files that match the source glob pattern
+to the given directory. The names will remain the same.
+
+=cut
+
 # move over several files into a new directory
 sub MoveFiles {
     my ($src, $dest) = @_;
@@ -316,17 +578,32 @@ sub MoveFiles {
     
 }
 
+=head2 MoveFile(source, dest)
+
+This function moves an individual file from the source to the
+destination. It allows for renaming.
+
+=cut
+
 # copy a file and possibly rename.
 sub MoveFile {
     my ($src, $dest) = @_;
     $writer->dataElement('li', "Move $src to $dest\n");
     return 1 if ($dryrun);
     if( move($src, $dest) == 0) {
-	$writer->dataElement('li', "Copy failed: $!\n");
+	$writer->dataElement('li', "Move failed: $!\n");
 	return 0;
     }
     return 1;
 }
+=head2 UpdateFileVersion(file, patterns)
+
+This functions name will probably change. It allows for updating files
+contents based on the given set of patterns. Some care is needed to
+get the patterns and the replacements correct. The replacement text is
+subject to double evaluation.
+
+=cut
 
 sub UpdateFileVersion {
     my ($file, %patterns) = @_;
@@ -354,14 +631,37 @@ sub UpdateFileVersion {
     return rename("$file.$$", $file);
 }
 
+
+=head2 AddOutput(list)
+
+This allows additional commentary to be added to the output stream.
+
+=cut 
+
 sub AddOutput {
     $writer->characters("@_");
 }
+
+=head2 AddElement(list)
+
+This allows additional constructs to be added to the output, such a
+href references and so on. It is passed onto XML::Writer::dataElement
+directly and takes the same syntax.
+
+=cut
 
 sub AddElement {
     $writer->dataElement(@_);
 }
 
+
+=head2 RunTests(args)
+
+Run the list of perl style test files, and capture the result in the
+output of the log. The The arguments allow you to specify the tests to
+run, see PANT::Test for details.
+
+=cut
 
 sub RunTests {
     require PANT::Test;
@@ -369,34 +669,48 @@ sub RunTests {
     return $test->RunTests(@_);
 }
 
+=head2 Zip(file)
+
+This function returns a PANT::Zip object to help construct the given zip file.
+See PANT::Zip for more details.
+
+=cut
+
 sub Zip {
     require PANT::Zip;
     return new PANT::Zip($writer, @_, dryrun=>$dryrun);
 }
+
+=head2 Cvs()
+
+This function returns a PANT::Cvs object to help with running Cvs commands.
+See PANT::Cvs for more details.
+
+=cut
 
 sub Cvs {
     require PANT::Cvs;
     return new PANT::Cvs($writer, @_, dryrun=>$dryrun);
 }
 
+
+=head2 FileCompare(F1, F2)
+
+This function compares two files using the File::Compare routines to
+see if their contents are identical.
+
+=cut
+
 sub FileCompare {
-    my($f1, $f2, $alg) = @_;
-    $alg = "MD5" if (!$alg);
-
-    my $hf1 = Digest->new($alg);
-    my $fh = new IO::File $f1, "r";
-    binmode $fh;
-    Abort("Can't read file $f1") if (!$fh);
-    $hf1->addfile($fh);
-    
-    my $hf2 = Digest->new($alg);
-    $fh = new IO::File $f2, "r";
-    binmode $fh;
-    Abort("Can't read file $f2") if (!$fh);
-    $hf2->addfile($fh);
-
-    return $hf1->digest eq $hf2->digest;
+    my($f1, $f2) = @_;
+    return File::Compare::compare($f1, $f2) == 0;
 }
+
+=head2 MakeTree(dir)
+
+Create a given directory, and all required intermediate paths.
+
+=cut
 
 sub MakeTree {
     my $dir = shift;
@@ -410,6 +724,12 @@ sub MakeTree {
     return -d $dir;
 }
 
+=head2 RmTree(dir)
+
+This function removes the entire tree starting at the given directory.
+Obviously be careful!
+
+=cut
 
 sub RmTree {
     my $dir = shift;
@@ -419,302 +739,6 @@ sub RmTree {
     return ! -d $dir;
 }
 
-sub BuildSolution {
-    my($sln, %args) = @_;
-    my $slnfile = $args{solution} || "$sln.sln";
-    my $project = $args{project} || $sln;
-    my $buildtype = $args{buildtype} || "/build";
-    my $log = $args{log} || "$sln.log";
-    my $buildtarget = $args{target} || "Release";
-    my $devenv = $args{devenv} || "devenv";
-
-    my $cmd = qq{$devenv $slnfile $buildtype "$buildtarget" /project $project /out $log};
-    return Command($cmd, log=>$log);
-
-}
-
-sub FindPatternInFile {
-    my ($file, $pat) = @_;
-    open(FILE, $file) || return undef;
-    while (my $line = <FILE>) {
-        if ($line =~ $pat) {
-	    close(FILE);
-	    return $1;
-        }
-    }
-    close(FILE);
-}
-
-1;
-
-__END__
-
-=head1 NAME
-
-PANT - Perl extension for ANT/NANT like build environments
-
-=head1 SYNOPSIS
-
-  perl buildall.pl -output buildlog
-
-  use PANT;
-  StartPant();
-  Phase(1, "Update");
-  Task(Command("cvs update"), "Fetch the latest code");
-  Phase(2, "Build");
-  Task(UpdateFileVersion("h/version.h",
-	 qr/(#define\s*VERSION\s+)(\d+)/=>q{"$1" . ($2+1)},
-	 "Version file updated");
-  Task(Command("make all"), "Built distribution");
-  Phase(3, "Deploy");
-  Task(Command("make distribution"), "Distribution built");
-  if (NewerThan(sources=>["myexe"], targets=>["/usr/bin/myexe"])) {
-     CopyFiles("myexe", "/usr/bin");
-  }
-  EndPant();
-
-=head1 ABSTRACT
-
-  This is a module to help construct automated build environments.
-  The inspiration came from the ANT/NANT build environments which use
-  XML to describe a make like syntax of dependencies. For various
-  reasons none of these were suitable for my purposes, and I suspect
-  that eventually you will end up writing something pretty similar to
-  perl in XML to cater for all the things you want to do.  Also a
-  module named PANT was just too good a name to miss!
-
-  This module draws on some of the ideas in ANT/NANT, and also in the
-  Test::Mode module for ways to do things.  This module is therefore a
-  collection of tools to help automate processes, and provide a build
-  log of what happened, so remote builds can be observed.
-
-
-=head1 DESCRIPTION
-
-This module provides various useful functions to help in the automated
-build of a project and to produce a build log. It is still in
-development, and may well change shape in the light of experience.
-
-=head1 EXPORTS
-
-=head2 StartPant([title],[style=>stuff])
-
-This call should be the first call into the module. It does some
-intialisation, and parses command line arguments in @ARGV. It takes
-the following arguments.
-
-=over 4
-
-=item String
-
-The first argument is a string, and is used as the title of the web page if present.
-If not present it will be called "Build Log".
-
-=item style=>stuff
-
-This argument if present signals some style data to include. This will
-be included in a E<lt>styleE<gt> tag. This allows you to apply different styles to
-the generated page.
-
-=item stylelink=>href
-
-This argument if present directs the inclusion of a style sheet external link.
-
-=back
-
-
-Supported command line options are 
-
-=over 4
-
-=item -output file
-
-Write the output to the given file.
-
-=item -dryrun
-
-Simulate a run without actually doing anything.
-
-=back
-
-=head2 EndPant()
-
-This function finishes up the run, and should be the last call into
-the module. It completes the build log in a tidy way.
-
-=head2 CallPant(name, options)
-
-This function allows you to call a subsidiary pant build. The build
-will be run and waited for. A reference in the current log will be
-made to the new log. It is assumed that the subsidiary build is also
-using PANT as it passes some command line arguments to sort out the
-logging.
-
-Options include
-
-=over 4
-
-=item directory=>place
-
-Change to the given directory to run the subsidiary build. The log
-path should be modified so it fits.
-
-=item logname=>name
-
-Name the log file that it will write to this. If this is not given, a
-name will be made up for you.
-
-=back
-
-=head2 Phase([list])
-
-This function is purely for help in dividing up the build log. It
-inserts a heading into the log allowing you to divide the build up
-into a variety of parts. You might have a pre-build cvs checkput
-phase, a build phase, and followed up by a test and deployment phase.
-
-=head2 DateStamp 
-
-This function returns a datestamp in a common format. Its is intended
-for use in logging output, and also in CVS/SVN type retrievals.
-
-=head2 NewerThan(sources=>[qw(f1 f2*.txt)], targets=>[build], ...)
-
-This function provides a make like dependency checker.
-It has the following arguments,
-
-=over 4
-
-=item sources
-
-A list of wildcard (glob'able) files that are the source.
-
-=item treesources
-
-A list of wildcard directories that are descended for source files. 
-Currently all files in the tree are considered possibilities.
-
-=item targets
-
-A list of wildcard (glob'able) files that are the target
-
-=back
-
-The function will return true if any of the sources are
-newer than the oldest of the targets. 
-
-=head2 Task(result, message)
-
-This command evaluates the first argument to see if it is true, and
-prints the second argument into the log. If the first argument is
-false, the build will abort.
-
-=head2 Abort(list)
-
-This function aborts the build and is called internally when thigns go
-wrong.
-
-=head2 Command(cmd, options)
-
-This function runs the given external command, capturing the output
-for the log, and evaluating the return code to see if it worked.
-
-=over 4
-
-Currently there is only one option 
-
-=item directory=>"somewhere"
-
-This will cause the command to run in the given directory, rather than
-being where you happen to be currently.
-
-=back
-
-=head2 CopyFiles(source, destdir)
-
-This function copies all the files that match the source glob pattern
-to the given directory. The names will remain the same.
-
-=head2 CopyFile(source, dest)
-
-This function copies an individual file from the source to the
-destination. It allows for renaming.
-
-=head2 CopyTree(source, dest)
-
-This function copies an entire tree hierarchy from the source to the 
-destination. It makes use of File::Copy::Recursive routines to do this.
-
-=head2 MoveFiles(source, destdir)
-
-This function moves all the files that match the source glob pattern
-to the given directory. The names will remain the same.
-
-=head2 MoveFile(source, dest)
-
-This function moves an individual file from the source to the
-destination. It allows for renaming.
-
-=head2 RmTree(dir)
-
-This function removes the entire tree starting at the given directory.
-Obviuosly be careful!
-
-=head2 MakeTree(dir)
-
-Create a given directory, and an required intermediate paths.
-
-=head2 UpdateFileVersion(file, patterns)
-
-This functions name will probably change. It allows for updating files
-contents based on the given set of patterns. Some care is needed to
-get the patterns and the replacements correct. The replacement text is
-subject to double evaluation.
-
-=head2 AddOutput(list)
-
-This allows additional commentary to be added to the output stream.
-
-=head2 AddElement(list)
-
-This allows additional constructs to be added to the output, such a
-href references and so on. It is passed onto XML::Writer::dataElement
-directly and takes the same syntax.
-
-=head2 RunTests(args)
-
-Run the list of perl style test files, and capture the result in the
-output of the log. The The arguments allow you to specify the tests to
-run, see PANT::Test for details.
-
-
-=head2 Zip(file)
-
-This function returns a PANT::Zip object to help construct the given zip file.
-See PANT::Zip for more details.
-
-=head2 Cvs()
-
-This function returns a PANT::Cvs object to help with running Cvs commands.
-See PANT::Cvs for more details.
-
-=head2 FindPatternInFile(file, pattern)
-
-This function searches the given file line by line, until it finds the
-pattern given, and returns the string matching the first bracketed
-expression int the regexp. This can be used to 
-find things like file versions.
-
-=over 4
-
-my $ver = FindPatternInFile("thing.rc", qr/^\s*FILEVERSION\s*(\d+,\d+,\d+,\d+)/);
-
-=back
-
-=head2 FileCompare(F1, F2, [alg])
-
-This function compares two files for equality using the given hash algorithm.
-If no algorithm is given, it will use MD5. Returns true if they are the same.
 
 =head2 BuildSolution(project, args...)
 
@@ -752,6 +776,53 @@ The target build environment, usually Debug or Release.
 The name of the devenv binary - which might be a full pathname.
 
 =back
+
+=cut
+
+sub BuildSolution {
+    my($sln, %args) = @_;
+    my $slnfile = $args{solution} || "$sln.sln";
+    my $project = $args{project} || $sln;
+    my $buildtype = $args{buildtype} || "/build";
+    my $log = $args{log} || "$sln.log";
+    my $buildtarget = $args{target} || "Release";
+    my $devenv = $args{devenv} || "devenv";
+
+    my $cmd = qq{$devenv $slnfile $buildtype "$buildtarget" /project $project /out $log};
+    return Command($cmd, log=>$log);
+
+}
+
+=head2 FindPatternInFile(file, pattern)
+
+This function searches the given file line by line, until it finds the
+pattern given, and returns the string matching the first bracketed
+expression int the regexp. This can be used to 
+find things like file versions.
+
+=over 4
+
+my $ver = FindPatternInFile("thing.rc", qr/^\s*FILEVERSION\s*(\d+,\d+,\d+,\d+)/);
+
+=back
+
+=cut
+
+sub FindPatternInFile {
+    my ($file, $pat) = @_;
+    open(FILE, $file) || return undef;
+    while (my $line = <FILE>) {
+        if ($line =~ $pat) {
+	    close(FILE);
+	    return $1;
+        }
+    }
+    close(FILE);
+}
+
+1;
+
+__END__
 
 =head1 SEE ALSO
 

@@ -1,3 +1,13 @@
+2005-04-01  Julian Onions
+
+	* Version 0.16
+	* PANT.pm(FileCompare): Use File::Compare.
+	* Some more logging
+
+2005-03-17  Julian Onions
+
+	* PANT.pm (Phase): Add an <a name=> to each phase.
+
 2005-03-16  Julian Onions  
 
 	* Version 0.15
