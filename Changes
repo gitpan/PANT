@@ -1,0 +1,6 @@
+Revision history for Perl extension PANT.
+
+0.01  Wed Jan 26 09:56:56 2005
+	- original version; created by h2xs 1.22 with options
+		-cfn PANT
+
