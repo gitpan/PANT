@@ -30,7 +30,7 @@ our @ISA = qw(Exporter);
 # will save memory.
 our %EXPORT_TAGS = ( 'all' => [ qw(
 	Phase Task NewerThan Command CopyFile CopyFiles DateStamp FileCompare
-        MoveFile MoveFiles MakeTree RmTree
+        MoveFile MoveFiles MakeTree RmTree Cvs
 	UpdateFileVersion StartPant EndPant CallPant RunTests Zip) ] );
 
 our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
@@ -38,7 +38,7 @@ our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
 our @EXPORT =  ( @{ $EXPORT_TAGS{'all'} } );
 
 
-our $VERSION = '0.07';
+our $VERSION = '0.08';
 
 my $dryrun = 0;
 my ($logvolume, $logdirectory, $logfilename, $logstem, $logsuffix);
@@ -343,6 +343,11 @@ sub Zip {
     return new PANT::Zip($writer, @_, dryrun=>$dryrun);
 }
 
+sub Cvs {
+    require PANT::Cvs;
+    return new PANT::Cvs($writer, @_, dryrun=>$dryrun);
+}
+
 sub FileCompare {
     my($f1, $f2, $alg) = @_;
     $alg = "MD5" if (!$alg);
@@ -599,6 +604,11 @@ Run the list of perl style test files, and capture the result in the output of t
 
 This function returns a PANT::Zip object to help construct the given zip file.
 See PANT::Zip for more details.
+
+=head2 Cvs()
+
+This function returns a PANT::Cvs object to help with running Cvs commands.
+See PANT::Cvs for more details.
 
 =head2 FileCompare(F1, F2, [alg])
 

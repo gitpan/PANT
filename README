@@ -1,8 +1,8 @@
-PANT version 0.07
+PANT version 0.08
 =================
 
 This is a set of useful functions to facilitate building packages in
-an automate build environment. It has facilities to ease commond tasks
+an automate build environment. It has facilities to ease common tasks
 and provide a HTML build log of what happened. It has come about
 because I found neither ANT or NANT did quite what I needed, and there 
 is "more than one way to do it".
