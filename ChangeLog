@@ -1,5 +1,11 @@
 2005-02-09  Julian Onions
 
+	* Version 0.09
+	* Pant/Cvs.pm - correct some stupid errors in the documentation
+	* Pant/Zip.pm - some minor documentation tweaks
+
+2005-02-09  Julian Onions
+
 	* Version 0.08
 	* PANT.pm (StartPant): Added the Cvs
 	* Pant/Cvs.pm - some support for running cvs type things, and

@@ -38,7 +38,7 @@ our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
 our @EXPORT =  ( @{ $EXPORT_TAGS{'all'} } );
 
 
-our $VERSION = '0.08';
+our $VERSION = '0.09';
 
 my $dryrun = 0;
 my ($logvolume, $logdirectory, $logfilename, $logstem, $logsuffix);

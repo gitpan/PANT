@@ -27,7 +27,7 @@ our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
 
 our @EXPORT = qw( );
 
-our $VERSION = '0.04';
+our $VERSION = '0.05';
 
 # list of table column headers
 our @headers = ('Failed Test', 'Stat', 'Wstat', 'Total', 'Fail', 'Failed', 'List of failed tests');
@@ -122,17 +122,19 @@ output.
 
 =head1 EXPORTS
 
+None
+
+=head1 METHODS
+
 =head2 new
 
 Constructor for a test object. Requires an XML::Writer object as a parameter, which it
 will use for subsequent log construction.
 
-=head1 METHODS
-
 =head2 runtests
 
 This takes a list of files with tests in to run. The output is 
-trapped and diverted to the logging stream.
+trapped and diverted to the logging stream. It appears as an html table.
 
 
 =head1 SEE ALSO

@@ -25,7 +25,7 @@ our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
 
 our @EXPORT = qw( );
 
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 
 
 sub new {
@@ -112,13 +112,13 @@ __END__
 
 =head1 NAME
 
-PANT::Zip - PANT support for cvs operations
+PANT::Cvs - PANT support for cvs operations
 
 =head1 SYNOPSIS
 
   use PANT;
 
-  $cvs = Cvs("foo.zip);
+  $cvs = Cvs();
   $cvs->Run("cvs update");
   if ($cvs->HasUpdates()) {
     # increment version
