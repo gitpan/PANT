@@ -25,7 +25,8 @@ EOF
 
 my $cvs = Cvs();
 ok($cvs, "Cvs allocated");
-ok($cvs->Run("$^X -ne '{ print; }' xxxtest.txt"), "Cvs Run ok");
+my $command = qq{$^X -ne '{ print; }' xxxtest.txt};
+ok($cvs->Run($command), "Cvs Run $command ok");
 ok($cvs->HasUpdate(), "An updated file has been spotted");
 ok(!$cvs->HasLocalMod(), "A local file has not been modifed");
 ok(!$cvs->HasConflict(), "A file has not conflicted");

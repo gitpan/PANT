@@ -38,7 +38,7 @@ our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
 our @EXPORT =  ( @{ $EXPORT_TAGS{'all'} } );
 
 
-our $VERSION = '0.09';
+our $VERSION = '0.10';
 
 my $dryrun = 0;
 my ($logvolume, $logdirectory, $logfilename, $logstem, $logsuffix);
@@ -388,6 +388,31 @@ sub RmTree {
     return ! -d $dir;
 }
 
+sub BuildSolution {
+    my($sln, %args) = @_;
+    my $slnfile = $args{solution} || "$sln.sln";
+    my $project = $args{project} || $sln;
+    my $buildtype = $args{buildtype} || "/build";
+    my $log = $args{log} || "$sln.log";
+    my $buildtarget = $args{target} || "Release";
+    my $devenv = $args{devenv} || "devenv";
+
+    my $cmd = qq{$devenv $slnfile $buildtype "$buildtarget" /project $project};
+    return Command($cmd, log=>$log);
+
+}
+
+sub FindPatternInFile {
+    my ($file, $pat) = @_;
+    open(FILE, $file) || return undef;
+    while (my $line = <FILE>) {
+        if ($line =~ $pat) {
+              return $1;
+        }
+    }
+    close(FILE);
+}
+
 1;
 
 __END__
@@ -596,9 +621,12 @@ This allows additional constructs to be added to the output, such a
 href references and so on. It is passed onto XML::Writer::dataElement
 directly and takes the same syntax.
 
-=head2 RunTests(list)
+=head2 RunTests(args)
 
-Run the list of perl style test files, and capture the result in the output of the log.
+Run the list of perl style test files, and capture the result in the
+output of the log. The The arguments allow you to specify the tests to
+run, see PANT::Test for details.
+
 
 =head2 Zip(file)
 
@@ -609,6 +637,19 @@ See PANT::Zip for more details.
 
 This function returns a PANT::Cvs object to help with running Cvs commands.
 See PANT::Cvs for more details.
+
+=head2 FindPatternInFile(file, pattern)
+
+This function searches the given file line by line, until it finds the
+pattern given, and returns the string matching the first bracketed
+expression int the regexp. This can be used to 
+find things like file versions.
+
+=over 4
+
+my $ver = FindPatternInFile("thing.rc", qr/^\s*FILEVERSION\s*(\d+,\d+,\d+,\d+)/);
+
+=back
 
 =head2 FileCompare(F1, F2, [alg])
 

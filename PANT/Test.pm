@@ -27,7 +27,7 @@ our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
 
 our @EXPORT = qw( );
 
-our $VERSION = '0.05';
+our $VERSION = '0.10';
 
 # list of table column headers
 our @headers = ('Failed Test', 'Stat', 'Wstat', 'Total', 'Fail', 'Failed', 'List of failed tests');
@@ -45,20 +45,26 @@ sub new {
 }
 
 sub RunTests {
-    my($self, @tests) = @_;
+    my($self, %args) = @_;
     my $writer = $self->{writer};
+    my $dir = $args{directory};
+    my $cdir;
+    if ($dir) {
+	$cdir = getcwd;
+	chdir($dir) || Abort("Can't change to directory $dir");
+    }
     my $retval = 1;
     $writer->startTag('li');
     $writer->characters("Run the following tests");
     $writer->startTag('ul');
     if ($self->{dryrun}) {
-	foreach my $t (@tests) {
+	foreach my $t (@{$args{tests}}) {
 	    $writer->dataElement('li', "Test $t");
 	}
     }
     else {
 
-	my($tot, $failedtests) = Test::Harness::_run_all_tests(@tests);
+	my($tot, $failedtests) = Test::Harness::_run_all_tests(@{$args{tests}});
 	$writer->dataElement('li',
 			     sprintf(" %d/%d subtests failed, %.2f%% okay.",
 				     $tot->{max} - $tot->{ok}, $tot->{max}, 
@@ -85,6 +91,7 @@ sub RunTests {
 					    $tot->{files}, $tot->{max}, 
 					     timestr($tot->{bench}, 'nop')));
     }
+    chdir ($cdir) if ($cdir);
     $writer->endTag('ul');
     $writer->endTag('li');
     return $retval;
@@ -135,6 +142,19 @@ will use for subsequent log construction.
 
 This takes a list of files with tests in to run. The output is 
 trapped and diverted to the logging stream. It appears as an html table.
+It takes the following options
+
+=over 4
+
+=item tests=>[list of tests]
+
+The list of tests to run (.t files).
+
+=item directory=>somewhere
+
+An optional directory to change to for the duration of the test
+
+=back
 
 
 =head1 SEE ALSO

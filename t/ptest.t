@@ -8,7 +8,7 @@ my @testarg = ("-output", $outfile);
 @delfiles = ();
 StartPant();
 push(@delfiles, $outfile);
-ok(RunTests(qw(t/fake.t)), "Run tests completes ok");
+ok(RunTests(tests=>[qw(t/fake.t)], directory=>"."), "Run tests completes ok");
 
 EndPant();
 

@@ -35,6 +35,7 @@ my $contents = FileLoad($outfile);
 ok($contents, "Contents of $outfile read");
 like($contents, qr/href=\"[^\"]+\"/i, "Found the reference to the sub html");
 my($href) = $contents =~ /href=\"([^\"]+)\"/i; 
+diag("Found href $href");
 ok(-f $href, "Sub pant file $href exists");
 push(@dellist, $href);
 my($v1,$d1, $f1) = splitpath(rel2abs($outfile));
