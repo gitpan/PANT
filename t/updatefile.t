@@ -9,11 +9,11 @@ BEGIN { use_ok('PANT') };
 
 #########################
 
-my $outfile = "xxxtest";
+my $outfile = "xxxtest.html";
 my @testarg = ("-output", $outfile);
 @ARGV = @testarg;
 
-my @dellist = ("$outfile.html");
+my @dellist = ($outfile);
 
 StartPant("Test UpdateFile stuff");
 

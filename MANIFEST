@@ -1,4 +1,4 @@
-Changes
+ChangeLog
 examples/mkzip.pl
 Makefile.PL
 MANIFEST
@@ -10,5 +10,6 @@ README
 t/basic.t
 t/fake.t
 t/ptest.t
+t/subpant.t
 t/updatefile.t
 t/ztest.t

@@ -1,4 +1,11 @@
-Revision history for Perl extension PANT.
+2005-02-02  Julian Onions 
+
+	* Version 0.05
+	* PANT.pm revised the calling sequence - full paths for logs
+	including the .html. Makes calling sub pants a bit harder, but
+	thats my problem!
+	* new test for subpant calling 
+	
 	
 0.04 2005-02-01  Julian Onions
 
@@ -30,4 +37,7 @@ Revision history for Perl extension PANT.
 	- original version; created by h2xs 1.22 with options
 		-cfn PANT
 
--*- mode: change-log -*-
+
+Local Variables:
+mode:change-log 
+End:

@@ -10,7 +10,7 @@ use Carp;
 use Cwd;
 use File::Copy;
 use File::Basename;
-use File::Spec::Functions;
+use File::Spec::Functions qw(:ALL);
 use File::Find;
 use Getopt::Long;
 use XML::Writer;
@@ -36,26 +36,35 @@ our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
 our @EXPORT =  ( @{ $EXPORT_TAGS{'all'} } );
 
 
-our $VERSION = '0.04';
+our $VERSION = '0.05';
 
 my $dryrun = 0;
-my $logname;
+my ($logvolume, $logdirectory, $logfilename, $logstem, $logsuffix);
 my $logcount= 1;
 my $writer;
 
 sub StartPant {
     my $title = shift || "Build log";
-    $logname = "";
+    my $logname = "";
     GetOptions("output=s"=>\$logname,
     		n=>\$dryrun,
     		dryrun=>\$dryrun);
     my $fh = *STDOUT;
     if ($logname) {
-	$fh = new IO::File "$logname.html", "w";
+	$fh = new IO::File "$logname", "w";
     }
     else {
-	$logname = "buildlog";
+	$logname = "buildlog.html";
     }
+    if (file_name_is_absolute($logname)) {
+	($logvolume,$logdirectory,$logfilename) = splitpath( $logname );
+    }
+    else {
+	($logvolume,$logdirectory,$logfilename) = splitpath(catfile(getcwd, $logname));
+    }
+    $logstem = $logfilename;
+    $logstem =~ s/(\.[^.]+)$//;
+    $logsuffix = $1;
     $writer = XML::Writer->new(NEWLINES=>1, OUTPUT=>$fh);
     $writer->xmlDecl();
     $writer->doctype('html', "-//W3C//DTD XHTML 1.0 Transitional//EN", "http://www.w3.org/TR/xhtml1/DTD/transitional.dtd");
@@ -81,9 +90,12 @@ sub CallPant {
     $writer->startTag('li');
     
     $writer->characters("Calling subsidiary build $build.");
-    my $dir = $args{directory} . "/" || "";
-    my $rv = Command("$^X $build -output $logname-$logcount", 
-		     log=>"$dir$logname-$logcount.html", @_);
+    my $dir = exists $args{directory} ? $args{directory} . "/" : "";
+    my $logfile = catpath($logvolume, $logdirectory, 
+			  "$logstem-$logcount$logsuffix");
+    my $relfile = abs2rel($logfile, $dir);
+    my $rv = Command("$^X $build -output $relfile", 
+		     log=>$logfile, @_);
     $logcount ++;
     $writer->endTag('li');   
     return $rv;
@@ -226,7 +238,11 @@ sub Command {
         $writer->endTag('pre');
     }
     $writer->characters("$cmd failed: $!") if ($retval == 0);
-    $writer->dataElement('a', "Log file", href=>$args{log}) if $args{log};
+    if ($args{log}) {
+	my $reldir = abs2rel($args{log}, catpath($logvolume, $logdirectory, ''));
+
+	$writer->dataElement('a', "Log file", href=>$reldir);
+    }
     $writer->endTag('li');
     do { chdir($cdir) || Abort("Can't change back to $cdir: $!"); } if ($args{directory});
     return $retval;
@@ -385,7 +401,7 @@ Supported command line options are
 
 =item -output file
 
-Write the output to the given file, with .html appended.
+Write the output to the given file.
 
 =item -dryrun
 

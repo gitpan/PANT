@@ -9,19 +9,19 @@ BEGIN { use_ok('PANT') };
 
 #########################
 
-my $outfile = "xxxtest";
+my $outfile = "xxxtest.html";
 my @testarg = ("-output", $outfile);
 @ARGV = @testarg;
 
 my $titlename = "This is my title";
 StartPant($titlename);
 EndPant();
-ok(-f "$outfile.html", "HTML output generated from @testarg");
-my $fcontents = FileLoad("$outfile.html");
+ok(-f $outfile, "HTML output generated from @testarg");
+my $fcontents = FileLoad($outfile);
 
 like($fcontents, qr{<title\s*>$titlename</title\s*>}i, "Title is as expected");
 
-ok(unlink("$outfile.html"), "Remove file works");
+ok(unlink($outfile), "Remove file works");
 
 @ARGV =@testarg;
 StartPant();
@@ -62,10 +62,10 @@ SKIP: {
 }
 ok(unlink(@dellist), "Removed temporary files");
 EndPant();
-$fcontents = FileLoad("$outfile.html");
+$fcontents = FileLoad($outfile);
 like($fcontents, qr{<li\s*>\s*Task works}i, "Task1 appears in output");
 like($fcontents, qr{<li\s*>\s*2nd Task works}i, "Task2 appears in output");
-ok(unlink("$outfile.html"), "Remove file works");
+ok(unlink($outfile), "Remove file works");
 
 
 sub FileLoad {
