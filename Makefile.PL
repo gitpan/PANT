@@ -18,14 +18,15 @@ WriteMakefile(
 	  Exporter=>0, 
 	  Archive::Zip=>0,
 	  Test::Harness=>0,
+	  Test::Harness::Straps=>0,
 	  File::Find=>0,
-	File::Path=>0,
+          File::Path=>0,
 	  Benchmark=>0,
 	  Digest=>0
     	}, 
     ($] >= 5.005 ?    ## Add these new keywords supported since 5.005
       (ABSTRACT_FROM => 'PANT.pm', # retrieve abstract from module
-       AUTHOR     => 'Julian Onions <julianonions@yahoo.co.uk>') : ()),
+       AUTHOR     => 'Julian Onions <julianonions@yahoo.nospam.co.uk>') : ()),
     'LIBS'		=> [''], # e.g., '-lm'
     'DEFINE'		=> '', # e.g., '-DHAVE_SOMETHING'
     'INC'		=> '-I.', # e.g., '-I. -I/usr/include/other'

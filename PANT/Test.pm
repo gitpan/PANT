@@ -8,7 +8,7 @@ use warnings;
 use Carp;
 use Cwd;
 use XML::Writer;
-use Test::Harness;
+use Test::Harness::Straps;
 use Benchmark;
 use Exporter;
 
@@ -27,12 +27,8 @@ our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
 
 our @EXPORT = qw( );
 
-our $VERSION = '0.12';
+our $VERSION = '0.14';
 
-# list of table column headers
-our @headers = ('Failed Test', 'Stat', 'Wstat', 'Total', 'Fail', 'Failed', 'List of failed tests');
-# list of hash keys
-our @testhashkeys = qw(name estat wstat max failed percent canon);
 
 sub new {
     my($clsname, $writer, @args) =@_;
@@ -48,59 +44,114 @@ sub RunTests {
     my($self, %args) = @_;
     my $writer = $self->{writer};
     my $dir = $args{directory};
+    my $pushstreams = 1;
     my $cdir;
     if ($dir) {
 	$cdir = getcwd;
 	chdir($dir) || Abort("Can't change to directory $dir");
     }
     my $retval = 1;
-    $writer->startTag('li');
-    $writer->characters("Run the following tests");
+    $writer->dataElement('h2', "Run the following tests");
     $writer->startTag('ul');
-    if ($self->{dryrun}) {
-	foreach my $t (@{$args{tests}}) {
-	    $writer->dataElement('li', "Test $t");
-	}
+    $writer->startTag('table', border=>1);
+    $writer->startTag('tr');
+    foreach my $h (("Test",  "No.", "Passed", "Failed", "Skipped", "Pass rate", "Failure reason")) {
+      $writer->dataElement('th', $h);
     }
-    else {
+    $writer->endTag('tr');
+    my $stderrfile = "xxxxstderr$$.txt";
+    my($OLDERR, $stderr);
+    if ($pushstreams) {
+      # push the output state
+      open $OLDERR,     ">&", \*STDERR or die "Can't dup STDERR: $!";
+      $stderr = "";
+      close(STDERR);
+      open(STDERR, ">$stderrfile")      or die "Can't open STDERR: $!";
+    }
+    my $totaltests = 0;
+    my $totalpass = 0;
+    my $tfiles = 0;
+    my $tfailures = 0;
+    my $strap = new Test::Harness::Straps;
+    my $t_start = new Benchmark;
 
-	my($tot, $failedtests) = Test::Harness::_run_all_tests(@{$args{tests}});
-	$writer->dataElement('li',
-			     sprintf(" %d/%d subtests failed, %.2f%% okay.",
-				     $tot->{max} - $tot->{ok}, $tot->{max}, 
-				     100*$tot->{ok}/$tot->{max}));
+    foreach my $tfile (@{$args{tests}}) {
+      $writer->startTag('tr');
+      $writer->dataElement('td', $tfile);
+      $tfiles ++;
 
-	$retval = Test::Harness::_all_ok($tot);
-	if (!$retval) {
-	    $writer->startTag('table', border=>1);
-	    $writer->startTag('tr');
-	    foreach my $h (@headers) {
-		$writer->dataElement('th', $h);
-	    }
-	    $writer->endTag('tr');
-	    foreach my $t (sort keys %{ $failedtests }) {
-		$writer->startTag('tr');
-		foreach my $h (@testhashkeys) {
-		    $writer->dataElement('td', $failedtests->{$t}->{$h});
-		}
-		$writer->endTag('tr');
-	    }
-	    $writer->endTag('table');
-	}
-	$writer->dataElement('li', sprintf ("Files=%d, Tests=%d, %s\n",
-					    $tot->{files}, $tot->{max}, 
-					     timestr($tot->{bench}, 'nop')));
+      my %results;
+      if (!$self->{dryrun}) {
+	%results = $strap->analyze_file($tfile);
+      }
+
+      if (!%results) {
+	$writer->dataElement('td', $self->{dryrun} ? "Test not run -dryrun" : $strap->{error});
+	$writer->endTag('tr');
+	$totaltests ++;
+	next;
+      };
+      $tfailures ++ if (!$results{passing});
+      $totalpass +=  $results{ok};
+      $totaltests += $results{max};
+      my %attr = (id=> ($results{passing} ? "pass" : "fail"));
+      $writer->dataElement('td',  $results{max}, %attr);
+      $writer->dataElement('td', $results{ok}, %attr);
+      $writer->dataElement('td',  $results{max} - $results{ok}, %attr);
+      $writer->dataElement('td', $results{skip}, %attr);
+      $writer->dataElement('td', $results{ok} / $results{max} * 100, %attr);
+      $writer->startTag('td', %attr);
+      foreach my $err (MakeFailureReport(\%results)) {
+	$writer->characters($err);
+	$writer->emptyTag('br');
+      }
+      $writer->endTag('td');
+      $writer->endTag('tr');
+    }
+    my $timed = timediff(new Benchmark, $t_start);
+    if ($pushstreams) {
+      open STDERR, ">&", $OLDERR    or die "Can't dup OLDERR: $!";
+      if (open JUNK, "$stderrfile") {
+	  local($/);
+	  $stderr = <JUNK>;
+	  close(JUNK);
+      }
+      unlink($stderrfile);
+    }
+    $writer->endTag("table");
+    $writer->dataElement('li',
+			 sprintf("Summary: Test Files $tfiles, Failed Test files $tfailures, %.2f%%",
+				 ($tfiles-$tfailures) / $tfiles * 100));
+    $writer->dataElement('li',
+			 sprintf("Summary: Total Tests $totaltests, Failed Tests %d, Pass rate %.2f%%",
+				 $totaltests - $totalpass,
+				 $totalpass / $totaltests * 100));
+    $writer->dataElement('li', "Took " . timestr($timed));
+
+    if($stderr) {
+      $writer->dataElement('li', "Error output"); 
+      $writer->dataElement('pre', $stderr);
     }
     chdir ($cdir) if ($cdir);
     $writer->endTag('ul');
-    $writer->endTag('li');
     return $retval;
 }
 
-
+sub MakeFailureReport {
+  my $report = shift;
+  return ("All Passed") if ($report->{passing});
+  my @results = ();
+  my $tnum = 0;
+  foreach my $test (@{$report->{details}}) {
+    $tnum ++;
+    next if ($test->{ok});
+    push(@results, "$tnum $test->{name}");
+  }
+  return @results;
+}
 1;
 __END__
-# Below is stub documentation for your module. You'd better edit it!
+
 
 =head1 NAME
 
@@ -123,9 +174,6 @@ PANT::Test - PANT support for running tests
 This module is part of a set to help run automated
 builds of a project and to produce a build log. This part
 is designed to incorporate runs of the perl test suite.
-By careful massage, it is possible (though more tricky than you
-might think!) to run arbritrary tests that output perl test format
-output.
 
 =head1 EXPORTS
 
@@ -142,6 +190,14 @@ will use for subsequent log construction.
 
 This takes a list of files with tests in to run. The output is 
 trapped and diverted to the logging stream. It appears as an html table.
+Table cells that refer to a failed test will have the html ID of "fail", and those
+that pass will be tagged with the ID "pass".
+This allows for appropriate syle sheet controls to highlight cells.
+
+C<td#fail { background:red }>
+
+C<td#pass { background:green }>
+
 It takes the following options
 
 =over 4
@@ -175,3 +231,4 @@ it under the same terms as Perl itself.
 
 
 =cut
+

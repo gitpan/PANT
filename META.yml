@@ -1,7 +1,7 @@
 # http://module-build.sourceforge.net/META-spec.html
 #XXXXXXX This is a prototype!!!  It will change in the future!!! XXXXX#
 name:         PANT
-version:      0.13
+version:      0.14
 version_from: PANT.pm
 installdirs:  site
 requires:
@@ -20,6 +20,7 @@ requires:
     Getopt::Long:                  0
     IO::File:                      0
     Test::Harness:                 0
+    Test::Harness::Straps:         0
     XML::Writer:                   0
 
 distribution_type: module

@@ -1,3 +1,10 @@
+2005-03-14  Julian Onions  
+
+	* TEST.pm: Rewritten this completely to use the
+	Test::Harness::Straps stuff. Tag with pass/fail tag ids.
+	* PANT.pm(StartPant) Allow style data.
+	* various tests changed to test the new stuff
+
 2005-03-11  Julian Onions  
 
 	* PANT.pm: Added more commentary to tree copies
@@ -15,7 +22,6 @@
 
 	* Version 0.11
 	* PANT.pm: Made the FindPatternInFile exported and added tests
-	
 
 2005-02-16  Julian Onions
 	

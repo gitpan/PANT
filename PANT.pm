@@ -41,7 +41,7 @@ our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
 our @EXPORT =  ( @{ $EXPORT_TAGS{'all'} } );
 
 
-our $VERSION = '0.13';
+our $VERSION = '0.14';
 
 my $dryrun = 0;
 my ($logvolume, $logdirectory, $logfilename, $logstem, $logsuffix);
@@ -57,17 +57,19 @@ if ($^O ne 'VMS') {
 
 sub StartPant {
     my $title = shift || "Build log";
+    my(%extra) = @_;
     my $logname = "";
     GetOptions("output=s"=>\$logname,
     		n=>\$dryrun,
     		dryrun=>\$dryrun);
-    my $fh = *STDOUT;
+    my $fh;
     if ($logname) {
-	$fh = new IO::File "$logname", "w" or die "Can't open file $logname";
+	$fh = new IO::File "$logname", "w" or die "Can't open file $logname: $!";
 
     }
     else {
 	$logname = "buildlog.html";
+	open $fh,  ">&STDOUT" or die "Can't duplicate stdout: $!";
     }
     if (file_name_is_absolute($logname)) {
 	($logvolume,$logdirectory,$logfilename) = splitpath( $logname );
@@ -84,6 +86,12 @@ sub StartPant {
     $writer->startTag('html', xmlns=>"http://www/w3/org/TR/xhtml1");
     $writer->startTag('head');
     $writer->dataElement('title', $title);
+    if ($extra{stylelink}) {
+      $writer->emptyTag('link', href=>$extra{stylelink}, type=>"text/css");
+    }
+    if ($extra{style}) {
+      $writer->dataElement('style', $extra{style}, type=>"text/css");
+    }
     $writer->endTag('head');
     $writer->startTag('body');
 }
@@ -490,12 +498,31 @@ development, and may well change shape in the light of experience.
 
 =head1 EXPORTS
 
-=head2 StartPant([message])
+=head2 StartPant([title],[style=>stuff])
 
 This call should be the first call into the module. It does some
 intialisation, and parses command line arguments in @ARGV. It takes
-one optional argument which is a string used to title the HTML build
-log. If not present it will be called "Build Log".
+the following arguments.
+
+=over 4
+
+=item String
+
+The first argument is a string, and is used as the title of the web page if present.
+If not present it will be called "Build Log".
+
+=item style=>stuff
+
+This argument if present signals some style data to include. This will
+be included in a E<lt>styleE<gt> tag. This allows you to apply different styles to
+the generated page.
+
+=item stylelink=>href
+
+This argument if present directs the inclusion of a style sheet external link.
+
+=back
+
 
 Supported command line options are 
 
