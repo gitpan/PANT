@@ -32,7 +32,7 @@ our @ISA = qw(Exporter);
 # will save memory.
 our %EXPORT_TAGS = ( 'all' => [ qw(
 	Phase Task NewerThan Command CopyFile CopyFiles DateStamp FileCompare
-	CopyTree
+	CopyTree BuildSolution
         MoveFile MoveFiles MakeTree RmTree Cvs FindPatternInFile
 	UpdateFileVersion StartPant EndPant CallPant RunTests Zip) ] );
 
@@ -41,7 +41,7 @@ our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
 our @EXPORT =  ( @{ $EXPORT_TAGS{'all'} } );
 
 
-our $VERSION = '0.14';
+our $VERSION = '0.15';
 
 my $dryrun = 0;
 my ($logvolume, $logdirectory, $logfilename, $logstem, $logsuffix);
@@ -428,7 +428,7 @@ sub BuildSolution {
     my $buildtarget = $args{target} || "Release";
     my $devenv = $args{devenv} || "devenv";
 
-    my $cmd = qq{$devenv $slnfile $buildtype "$buildtarget" /project $project};
+    my $cmd = qq{$devenv $slnfile $buildtype "$buildtarget" /project $project /out $log};
     return Command($cmd, log=>$log);
 
 }
@@ -448,7 +448,6 @@ sub FindPatternInFile {
 1;
 
 __END__
-# Below is stub documentation for your module. You'd better edit it!
 
 =head1 NAME
 
@@ -716,6 +715,43 @@ my $ver = FindPatternInFile("thing.rc", qr/^\s*FILEVERSION\s*(\d+,\d+,\d+,\d+)/)
 
 This function compares two files for equality using the given hash algorithm.
 If no algorithm is given, it will use MD5. Returns true if they are the same.
+
+=head2 BuildSolution(project, args...)
+
+This function attempts to build a visual studio style project.
+The first argument is the base name of the project, which will be used to
+derive the F<.SLN> and other files.
+It has the following parameters, 
+
+=over 4
+
+=item solution=>name
+
+The name of the solution file. This can be used to insert a .vcproj file
+to have a similar effect.
+
+=item project=>name
+
+The given project in the solution you wish to build.
+
+=item buildtype=>type
+
+What sort of build you want to do. These are the support targets from
+visual studio, such as /build (default), /rebuild, /clean, /deploy etc.
+
+=item log=>file
+
+Where to output the log. The default is the base name with .log appended.
+
+=item target=>Release
+
+The target build environment, usually Debug or Release.
+
+=item devenv=>devenv
+
+The name of the devenv binary - which might be a full pathname.
+
+=back
 
 =head1 SEE ALSO
 

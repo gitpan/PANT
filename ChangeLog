@@ -1,5 +1,16 @@
+2005-03-16  Julian Onions  
+
+	* Version 0.15
+	* Test.pm: Reduce the decimal places for pass rate!
+
+2005-03-15  Julian Onions  
+
+	* PANT.pm (BuildSolution): Documented and exported the call to
+	allow solutions to be built
+
 2005-03-14  Julian Onions  
 
+	* Version 0.14
 	* TEST.pm: Rewritten this completely to use the
 	Test::Harness::Straps stuff. Tag with pass/fail tag ids.
 	* PANT.pm(StartPant) Allow style data.

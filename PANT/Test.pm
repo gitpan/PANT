@@ -27,7 +27,7 @@ our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
 
 our @EXPORT = qw( );
 
-our $VERSION = '0.14';
+our $VERSION = '0.15';
 
 
 sub new {
@@ -99,7 +99,7 @@ sub RunTests {
       $writer->dataElement('td', $results{ok}, %attr);
       $writer->dataElement('td',  $results{max} - $results{ok}, %attr);
       $writer->dataElement('td', $results{skip}, %attr);
-      $writer->dataElement('td', $results{ok} / $results{max} * 100, %attr);
+      $writer->dataElement('td', sprintf("%.2f", $results{ok} / $results{max} * 100), %attr);
       $writer->startTag('td', %attr);
       foreach my $err (MakeFailureReport(\%results)) {
 	$writer->characters($err);
