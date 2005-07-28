@@ -34,7 +34,7 @@ our @ISA = qw(Exporter);
 our %EXPORT_TAGS = ( 'all' => [ qw(
 	Phase Task NewerThan Command CopyFile CopyFiles DateStamp FileCompare
 	CopyTree BuildSolution
-        MoveFile MoveFiles MakeTree RmTree Cvs FindPatternInFile
+        MoveFile MoveFiles MakeTree RmTree Cvs Svn FindPatternInFile
 	UpdateFileVersion StartPant EndPant CallPant RunTests Zip) ] );
 
 our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
@@ -42,7 +42,7 @@ our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
 our @EXPORT =  ( @{ $EXPORT_TAGS{'all'} } );
 
 
-our $VERSION = '0.16';
+our $VERSION = '0.17';
 
 my $dryrun = 0;
 my ($logvolume, $logdirectory, $logfilename, $logstem, $logsuffix);
@@ -691,6 +691,18 @@ See PANT::Cvs for more details.
 sub Cvs {
     require PANT::Cvs;
     return new PANT::Cvs($writer, @_, dryrun=>$dryrun);
+}
+
+=head2 Svn()
+
+This function returns a PANT::Svn object to help with running Svn commands.
+See PANT::Svn for more details.
+
+=cut
+
+sub Svn {
+    require PANT::Svn;
+    return new PANT::Svn($writer, @_, dryrun=>$dryrun);
 }
 
 

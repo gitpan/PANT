@@ -6,6 +6,7 @@ MANIFEST
 META.yml			Module meta-data (added by MakeMaker)
 PANT.pm
 PANT/Cvs.pm
+PANT/Svn.pm
 PANT/Test.pm
 PANT/Zip.pm
 README
@@ -15,5 +16,6 @@ t/fake/fake.t
 t/fake/fake2.t
 t/ptest.t
 t/subpant.t
+t/svn.t
 t/updatefile.t
 t/ztest.t

@@ -1,3 +1,8 @@
+2005-7-27 Julian Onions
+	* Version 0.17
+	* Pant.pm(Snv): Svn support
+	* PANT/SVN.pm: Svn parsing support
+	
 2005-04-01  Julian Onions
 
 	* Version 0.16
